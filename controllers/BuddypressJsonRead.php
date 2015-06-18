@@ -152,7 +152,7 @@ class JSON_API_BuddypressRead_Controller {
 
         $aParams ['filter'] ['user_id'] = $this->userid;
         $aParams ['filter'] ['object'] = $this->component;
-        $aParams ['filter'] ['action'] = $this->type;
+        $aParams ['filter'] ['type'] = $this->type;
         $aParams ['filter'] ['primary_id'] = $this->itemid;
         $aParams ['filter'] ['secondary_id'] = $this->secondaryitemid;
         $iLimit = $this->limit;
@@ -166,15 +166,34 @@ class JSON_API_BuddypressRead_Controller {
 
             if (!empty($aTempActivities['activities'])) {
                 foreach ($aTempActivities['activities'] as $oActivity) {
-                    $oReturn->activities[(int) $oActivity->id]->component = $oActivity->component;
-                    $oReturn->activities[(int) $oActivity->id]->user[(int) $oActivity->user_id]->username = $oActivity->user_login;
+					$user = new BP_Core_User($oActivity->user_id);
+					if($user && $user->avatar){
+						if($user->avatar){
+							preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+							$oActivity->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+						}
+						if($user->avatar_thumb){
+							preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+							$oActivity->avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+						}
+						//preg_match_all('/(src)=("[^"]*")/i',$user->avatar_mini, $user_avatar_result);
+						//$oActivity->avatar_mini = str_replace('"','',$user_avatar_result[2][0]);
+					}
+					
+					$oReturn->activities[(int) $oActivity->id]->component = $oActivity->component;
+                    $oReturn->activities[(int) $oActivity->id]->user[(int) $oActivity->user_id]->id = $oActivity->user_id;
+					$oReturn->activities[(int) $oActivity->id]->user[(int) $oActivity->user_id]->username = $oActivity->user_login;
                     $oReturn->activities[(int) $oActivity->id]->user[(int) $oActivity->user_id]->mail = $oActivity->user_email;
                     $oReturn->activities[(int) $oActivity->id]->user[(int) $oActivity->user_id]->display_name = $oActivity->display_name;
+					$oReturn->activities[(int) $oActivity->id]->user[(int) $oActivity->user_id]->avatar_big = $oActivity->avatar_big;
+					$oReturn->activities[(int) $oActivity->id]->user[(int) $oActivity->user_id]->avatar_thumb = $oActivity->avatar_thumb;
                     $oReturn->activities[(int) $oActivity->id]->type = $oActivity->type;
                     $oReturn->activities[(int) $oActivity->id]->time = $oActivity->date_recorded;
+					$oReturn->activities[(int) $oActivity->id]->action = $oActivity->action;
                     $oReturn->activities[(int) $oActivity->id]->is_hidden = $oActivity->hide_sitewide === "0" ? false : true;
                     $oReturn->activities[(int) $oActivity->id]->is_spam = $oActivity->is_spam === "0" ? false : true;
                 }
+				//echo '<pre>';print_r($oReturn->activities);echo '</pre>';
                 $oReturn->count = count($aTempActivities['activities']);
             } else {
                 return $this->error('activity');
