@@ -311,6 +311,8 @@ class JSON_API_BuddypressRead_Controller {
 				$oReturn->profilefields->photo->avatar_big = $user_avatar_src;
 				$oReturn->profilefields->photo->avatar_thumb = $avatar_thumb_src;
 				$oReturn->profilefields->photo->avatar_mini = $avatar_mini_src;
+				$oReturn->profilefields->user->username = $user->profile_data['user_login'];
+				
 			}
 			/* CUstom changes VAJ - 09-06-2015*/
 			return $oReturn;
