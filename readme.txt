@@ -32,6 +32,11 @@ To install BuddyPress Json API just follow these steps:
 * activate the controller through the JSON API menu found in the WordPress admin center (Settings -> JSON API)
 
 
+== Screenshots ==
+1. Plugin Activation
+2. JSON API settings link wp-admin
+3. BuddyPress Json API Settings
+
 
 ==Changelog==
 
