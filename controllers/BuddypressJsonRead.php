@@ -254,62 +254,67 @@ class JSON_API_BuddypressRead_Controller {
     }
 
     /**
-     * Returns an array with the profile's fields
-     * @param String username: the username you want information from (required)
-     * @return array profilefields: an array containing the profilefields
-     */
-    public function profile_get_profile() {
-        $this->init('xprofile');
-        $oReturn = new stdClass();
-
-        if ($this->username === false || !username_exists($this->username)) {
-            return $this->error('xprofile', 1);
-        }
-
-        $oUser = get_user_by('login', $this->username);
-
-        if (!bp_has_profile(array('user_id' => $oUser->data->ID))) {
-            return $this->error('xprofile', 0);
-        }
-
-        while (bp_profile_groups(array('user_id' => $oUser->data->ID))) {
-            bp_the_profile_group();
-            if (bp_profile_group_has_fields()) {
-                $sGroupName = bp_get_the_profile_group_name();
-                while (bp_profile_fields()) {
-                    bp_the_profile_field();
-                    $sFieldName = bp_get_the_profile_field_name();
-                    if (bp_field_has_data()) {
-                        $sFieldValue = bp_get_the_profile_field_value();
-                    }
-                    $oReturn->profilefields->$sGroupName->$sFieldName = $sFieldValue;
-                }
-            }
-        }
-		
-		/* CUstom changes VAJ - 09-06-2015*/
-		$user = new BP_Core_User( $userid );
-		if($user->avatar){
-			$user_avatar = $user->avatar;
-			$avatar_thumb = $user->avatar_thumb;
-			$avatar_mini = $user->avatar_mini;
-			preg_match_all('/(src)=("[^"]*")/i',$user_avatar, $user_avatar_result);
-			$user_avatar_src = str_replace('"','',$user_avatar_result[2][0]);
-			preg_match_all('/(src)=("[^"]*")/i',$avatar_mini, $avatar_mini_result);
-			$avatar_mini_src = str_replace('"','',$avatar_mini_result[2][0]);
-			preg_match_all('/(src)=("[^"]*")/i',$avatar_thumb, $avatar_thumb_result);
-			$avatar_thumb_src = str_replace('"','',$avatar_thumb_result[2][0]);
+		 * Returns an array with the profile's fields
+		 * @param String username: the username you want information from (required)
+		 * @return array profilefields: an array containing the profilefields
+		 */
+		public function profile_get_profile() {
+			$this->userid = $_GET['userid'];
+			$this->username = $_GET['username'];
+			$this->init('xprofile');
+			$oReturn = new stdClass();
+			$error=0;
 			
-			$bbp_cover_pic = get_user_meta( $userid, 'bbp_cover_pic',true);
-			if(!$bbp_cover_pic){$bbp_cover_pic=$user_avatar_src;}
-			$oReturn->profilefields->photo->avatar = $bbp_cover_pic;
-			$oReturn->profilefields->photo->avatar_big = $user_avatar_src;
-			$oReturn->profilefields->photo->avatar_thumb = $avatar_thumb_src;
-			$oReturn->profilefields->photo->avatar_mini = $avatar_mini_src;
+			if(($this->userid=='' && $this->username === false) || ($this->username && !username_exists($this->username))) {
+				return $this->error('xprofile', 1);
+			}
+			if($this->userid){
+				$userid = $this->userid;
+			}else{
+				$oUser = get_user_by('login', $this->username);
+				$userid = $oUser->data->ID;
+			}
+			
+			if (!bp_has_profile(array('user_id' => $userid))) {
+				return $this->error('xprofile', 0);
+			}
+			while (bp_profile_groups(array('user_id' => $userid))) {
+				bp_the_profile_group();
+				if (bp_profile_group_has_fields()) {
+					$sGroupName = bp_get_the_profile_group_name();
+					while (bp_profile_fields()) {
+						bp_the_profile_field();
+						$sFieldName = bp_get_the_profile_field_name();
+						if (bp_field_has_data()) {
+						   $sFieldValue = strip_tags(bp_get_the_profile_field_value());
+						}
+						$oReturn->profilefields->$sGroupName->$sFieldName = $sFieldValue;
+					}
+				}
+			}
+			/* CUstom changes VAJ - 09-06-2015*/
+			$user = new BP_Core_User( $userid );
+			if($user->avatar){
+				$user_avatar = $user->avatar;
+				$avatar_thumb = $user->avatar_thumb;
+				$avatar_mini = $user->avatar_mini;
+				preg_match_all('/(src)=("[^"]*")/i',$user_avatar, $user_avatar_result);
+				$user_avatar_src = str_replace('"','',$user_avatar_result[2][0]);
+				preg_match_all('/(src)=("[^"]*")/i',$avatar_mini, $avatar_mini_result);
+				$avatar_mini_src = str_replace('"','',$avatar_mini_result[2][0]);
+				preg_match_all('/(src)=("[^"]*")/i',$avatar_thumb, $avatar_thumb_result);
+				$avatar_thumb_src = str_replace('"','',$avatar_thumb_result[2][0]);
+				
+				$bbp_cover_pic = get_user_meta( $userid, 'bbp_cover_pic',true);
+				if(!$bbp_cover_pic){$bbp_cover_pic=$user_avatar_src;}
+				$oReturn->profilefields->photo->avatar = $bbp_cover_pic;
+				$oReturn->profilefields->photo->avatar_big = $user_avatar_src;
+				$oReturn->profilefields->photo->avatar_thumb = $avatar_thumb_src;
+				$oReturn->profilefields->photo->avatar_mini = $avatar_mini_src;
+			}
+			/* CUstom changes VAJ - 09-06-2015*/
+			return $oReturn;
 		}
-		/* CUstom changes VAJ - 09-06-2015*/
-        return $oReturn;
-    }
 
     /**
      * Returns an array with messages for the current username
