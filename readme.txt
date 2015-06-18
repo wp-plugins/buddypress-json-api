@@ -38,13 +38,6 @@ To install BuddyPress Json API just follow these steps:
 3. BuddyPress Json API Settings
 
 
-==Changelog==
-
-=1.0.0=
-
-* Fresh Public setup
-
-
 
 ==Frequently Asked Questions==
 
@@ -171,3 +164,16 @@ where profile_pic is buddypress profile picture
 and cover_pic is big image to display as cover image like in facebook back bigger image. The cover image is stores in user meta table with variable named "bbp_cover_pic".
 
 so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic',true);
+
+
+
+
+==Changelog==
+
+=1.0.0=
+
+* Fresh Public setup
+
+=1.0.1=
+
+* Change in activity display api
