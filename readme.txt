@@ -1,0 +1,117 @@
+=== BuddyPress Json API ===
+Contributors: aheadzen
+Tags: buddypress, json, api, profile picture, profile update
+Requires at least : 4.0.0
+Tested up to: 4.2.2
+Stable tag: 2.1.1
+License: GPLv2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+
+
+JSON API additional features to be used with Buddypress in addition of profile and profile photo update.
+
+
+==Description==
+
+BuddyPress Json API is a plugin to supports the JSON API Plugin with a new Controller to set & get information from BuddyPress.
+
+The plugin included all features from the plugin "JSON API for Buddypress" in addition of manage profile features also.
+
+So you can get buddypress data via API same way set buddypress user profile via API.
+
+For user profile plugin has added edit profile photo with edit basic profile and additional fields added for users by buddypress settings.
+
+
+==Installation==
+First you have to install the [JSON API for WordPress Plugin](http://wordpress.org/extend/plugins/json-api/installation/).
+
+To install BuddyPress Json API just follow these steps:
+
+* upload the plugin folder to your WordPress plugin folder (/wp-content/plugins)
+* activate the plugin through the 'Plugins' menu in WordPress or by using the link provided by the plugin installer
+* activate the controller through the JSON API menu found in the WordPress admin center (Settings -> JSON API)
+
+
+
+==Changelog==
+
+=1.0.0=
+* Fresh Public setup
+
+
+
+==Frequently Asked Questions==
+
+1) List of api include in the plugin?
+==> The plugin included BuddypressRead Controller which includes below list of components:
+	a) profile_upload_photo
+	b) profile_set_profile
+	c) activity_get_activities
+	d) profile_get_profile
+	e) messages_get_messages
+	f) notifications_get_notifications
+	g) friends_get_friends
+	h) friends_get_friendship_request
+	i) friends_get_friendship_status
+	j) groups_get_groups
+	k) groups_check_user_has_invite_to_group
+	l) groups_check_user_membership_request_to_group
+	m) groups_get_group_admins
+	n) groups_get_group_mods
+	o) groups_get_group_members
+	p) groupforum_get_forum
+	q) groupforum_get_forum_by_group
+	r) groupforum_get_forum_topics
+	s) groupforum_get_topic_posts
+	t) sitewideforum_get_forum
+	u) sitewideforum_get_all_forums
+	v) sitewideforum_get_forum_topics
+	w) sitewideforum_get_topic_replies
+	x) settings_get_settings
+	
+
+	
+2) How to get more detail about usage of the plugin?
+==> For a full code documentation go to the [GitHub code documentation](http://tweichart.github.com/JSON-API-for-BuddyPress/doc/index.html)
+
+
+
+3) How to user "profile_upload_photo"
+==> All Data should be send by POST method.
+The required parameters are below with example:
+"clicked_pic" -- can be either 'profile_pic' OR 'cover_pic'
+				where profile_pic is buddypress profile picture
+				and cover_pic is big image to display as cover image like in facebook back bigger image. The cover image is stores in user meta table with variable named "bbp_cover_pic".
+				so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic',true);
+				while you get profile you will get both images under "photo" group in which "photo->avatar" is cover image and rest of all are profile images.
+
+"user_id"	-- user id should be profiler user is whose detail are going to change.
+
+picture_code  -- is direct encoded image code or base64_encode image code got from android phone.
+
+-- Profile picture update activity also added. 
+
+
+4) How to user "profile_set_profile"
+==> All Data should be send by POST method.
+"userid" -- user id should be profiler user is whose detail are going to change.
+
+"data" -- data are the JSON value of buddypress fields and value.
+The filed name should be like thefieldid_1, thefieldid_2,thefieldid_3,thefieldid_4.........
+where "thefieldid_" == is prefix variable and 1,2,3.... are the field id to store in buddypress database.
+Get field id while you add new field from wp-admin > Users > Profile Fields > you should see the form input elements source.
+It will display  all input elements id and name like:"field_1", "field_2", "field_3"....
+example : 
+$_POST['data']='{"1":"Test UserName","5":"About Content :: Lorem Ipsum is simply dummy text of the \n","2":"Male","3":"Native American","4":"Average","21":"Fit","32":"Kosher","39":"Sometimes","43":"Sometimes","47":"English","6":"USA","7":"New York"}';
+
+api url : http://siteurl.com/api/buddypressread/profile_set_profile/
+
+-- Profile update activity also added. 
+
+
+
+4) Additional features for "profile_set_profile"
+==>Added 'profile_pic' OR 'cover_pic' added under "photo" group in which "photo->avatar" is cover image and rest of all are profile images (big,thumb and small).
+where profile_pic is buddypress profile picture
+and cover_pic is big image to display as cover image like in facebook back bigger image. The cover image is stores in user meta table with variable named "bbp_cover_pic".
+so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic',true);
