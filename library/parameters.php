@@ -1,6 +1,6 @@
 <?php
 
-$buddypress_json_api_settings = array(
+$aParams = array(
     'activity' => array(
         'string' => array(
             'sort' => 'DESC',
