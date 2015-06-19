@@ -10,7 +10,7 @@ $aParams = array(
         ),
         'int' => array(
             'pages' => 1,
-            'offset' => 10,
+            'offset' => 15,
             'limit' => false,
             'userid' => false,
             'itemid' => false,

@@ -155,7 +155,7 @@ api url : http://siteurl.com/api/buddypressread/profile_set_profile/
 
 
 
-4) Additional features for "profile_set_profile"
+5) Additional features for "profile_set_profile"
 
 ==>Added 'profile_pic' OR 'cover_pic' added under "photo" group in which "photo->avatar" is cover image and rest of all are profile images (big,thumb and small).
 
@@ -164,6 +164,32 @@ where profile_pic is buddypress profile picture
 and cover_pic is big image to display as cover image like in facebook back bigger image. The cover image is stores in user meta table with variable named "bbp_cover_pic".
 
 so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic',true);
+
+
+
+6) How to user "activity_add_edit"
+
+==> All Data should be send by POST method.
+
+"userid" -- user id should be profiler user is whose detail are going to change.
+
+"content" -- Your activity contnet to be added.
+
+-->If you want to edit activity pass the activity id as per below variable::
+
+"activityid" -- Activity Id.
+
+
+
+7) How to user "activity_delete"
+
+==> All Data should be send by POST method.
+
+"userid" -- user id should be profiler user is whose detail are going to change.
+
+"activityid" -- Activity Id.
+
+
 
 
 
@@ -177,3 +203,9 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 =1.0.1=
 
 * Change in activity display api
+
+
+=1.0.2=
+
+* "activity_add_edit" to activity add/edit added
+* "activity_delete" to delete activity

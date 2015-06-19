@@ -9,7 +9,93 @@ require_once BUDDYPRESS_JSON_API_HOME . '/library/functions.class.php';
 
 class JSON_API_BuddypressRead_Controller {
 
-    public function profile_upload_photo()
+    /**
+     * Supply post data
+     * @param int userid: User ID
+     * @param String content: Activity content
+	 * @param int activityid: Activity Id for update
+     * @return array message: success or error message
+     */
+	public function activity_add_edit()
+	{
+		/*
+		//The data only for testing purpose.
+		$_POST['content'] = '123 HELLO THIS IS TEST ACTIVITY FOR ME 456';
+		$_POST['userid'] = 1;
+		$_POST['activityid'] = 48;
+		*/
+		$error = '';
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		if(!$_POST){return $oReturn->error = __('Not the post method.','aheadzen');}
+		if(!$_POST['content']){return $oReturn->error = __('Empty content.','aheadzen');}
+		if(!$_POST['userid']){return $oReturn->error = __('Wrong User Id.','aheadzen');}
+		$content = $_POST['content'];
+		$user_id = $_POST['userid'];
+		$activityid = (int)$_POST['activityid'];
+		
+		$arg = array(
+					'user_id'   => $user_id,
+					'component' => 'activity',
+					'type'      => 'activity_update',
+					'content'   => $content
+				);
+		if($activityid){$arg['id'] = $activityid;} //update activity
+		if($activity_id = bp_activity_add($arg)){
+			$oReturn->success->id = $activity_id;
+			if($activityid){
+				$oReturn->success->message = __('Activity updated successfully.','aheadzen');
+			}else{
+				$oReturn->success->message = __('Activity added successfully.','aheadzen');
+			}
+		}else{
+			if($activityid){
+				$error = __('Something wrong to add activity.','aheadzen');
+			}else{
+				$error = __('Something wrong to updated activity.','aheadzen');
+			}
+		}
+		$oReturn->error = $error;
+		return  $oReturn;
+	}
+	
+	/**
+     * Supply post data
+     * @param int userid: User ID
+     * @param int activityid: Activity Id for update
+     * @return array message: success or error message
+     */
+	public function activity_delete()
+	{
+		/*
+		//The data only for testing purpose.
+		$_POST['userid'] = 1;
+		$_POST['activityid'] = 47;
+		*/
+		
+		$error = '';
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		if(!$_POST){return $oReturn->error = __('Not the post method.','aheadzen');}
+		if(!$_POST['activityid']){return $oReturn->error = __('Wrong activity Id.','aheadzen');}
+		if(!$_POST['userid']){return $oReturn->error = __('Wrong user Id.','aheadzen');}
+		$user_id = $_POST['userid'];
+		$activityid = (int)$_POST['activityid'];
+		
+		$arg = array(
+					'id'  		 => $activityid,
+					'user_id' 	=> $user_id
+				);
+		if ( bp_activity_delete($arg)){
+			$oReturn->message = __( 'Activity deleted successfully', 'aheadzen');
+		}else{
+			$error =  __( 'There was an error when deleting that activity', 'aheadzen' );
+		}
+		$oReturn->error = $error;
+		return  $oReturn;
+	}
+	
+	public function profile_upload_photo()
 	{
 		/*
 		//below details are only for testing purpose.
@@ -20,8 +106,8 @@ class JSON_API_BuddypressRead_Controller {
 		*/		
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
-		if(!$_POST){return $oReturn->message = 'Not the post method.';}
-		if(!$_POST['picture_code']){return $oReturn->message = 'Wrong picture.';}
+		if(!$_POST){return $oReturn->message = __('Not the post method.','aheadzen');}
+		if(!$_POST['picture_code']){return $oReturn->message = __('Wrong picture.','aheadzen');}
 		
 		$clicked_pic = $_POST['clicked_pic'];
 		$user_id = $_POST['user_id'];
@@ -93,8 +179,8 @@ class JSON_API_BuddypressRead_Controller {
 		
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
-		if(!$_POST){return $oReturn->message = 'Not the post method.';}
-		if(!$_POST['data']){return $oReturn->message = 'Wrong post data.';}
+		if(!$_POST){return $oReturn->message = __('Not the post method.','aheadzen');}
+		if(!$_POST['data']){return $oReturn->message = __('Wrong post data.','aheadzen');}
 		$userid = $_POST['userid'];
 		if(!$userid){return $oReturn->message = 'Wrong user ID.';}
 		if (!bp_has_profile(array('user_id' => $userid))) {
@@ -117,7 +203,8 @@ class JSON_API_BuddypressRead_Controller {
 			'component' => 'xprofile',
 			'type'      => 'updated_profile'
 		) );
-		$oReturn->message = 'User Profile Updated Successfully. User ID:#'.$userid;
+		$oReturn->success->id = $userid;
+		$oReturn->success->message = __('User Profile Updated Successfully.','aheadzen');
 		return  $oReturn;
 	 }
 	 
@@ -149,20 +236,23 @@ class JSON_API_BuddypressRead_Controller {
 
         $aParams ['display_comments'] = $this->comments;
         $aParams ['sort'] = $this->sort;
-
+		
+		
         $aParams ['filter'] ['user_id'] = $this->userid;
         $aParams ['filter'] ['object'] = $this->component;
         $aParams ['filter'] ['type'] = $this->type;
         $aParams ['filter'] ['primary_id'] = $this->itemid;
         $aParams ['filter'] ['secondary_id'] = $this->secondaryitemid;
         $iLimit = $this->limit;
-
-        if ($this->pages === 1) {
+		
+		if ($this->pages === 1) {
             $aParams ['page'] = 1;
             if ($iLimit != 0)
                 $aParams['per_page'] = $iLimit;
-            $aTempActivities = bp_activity_get($aParams);
-
+            
+			
+			$aTempActivities = bp_activity_get($aParams);
+			
 
             if (!empty($aTempActivities['activities'])) {
                 foreach ($aTempActivities['activities'] as $oActivity) {
@@ -1063,5 +1153,3 @@ class JSON_API_BuddypressRead_Controller {
     }
 
 }
-
-?>
