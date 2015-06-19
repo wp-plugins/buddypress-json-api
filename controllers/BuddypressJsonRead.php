@@ -256,6 +256,7 @@ class JSON_API_BuddypressRead_Controller {
 
             if (!empty($aTempActivities['activities'])) {
                 foreach ($aTempActivities['activities'] as $oActivity) {
+					
 					$user = new BP_Core_User($oActivity->user_id);
 					if($user && $user->avatar){
 						if($user->avatar){
@@ -280,6 +281,7 @@ class JSON_API_BuddypressRead_Controller {
                     $oReturn->activities[(int) $oActivity->id]->type = $oActivity->type;
                     $oReturn->activities[(int) $oActivity->id]->time = $oActivity->date_recorded;
 					$oReturn->activities[(int) $oActivity->id]->action = $oActivity->action;
+					$oReturn->activities[(int) $oActivity->id]->content = $oActivity->content;
                     $oReturn->activities[(int) $oActivity->id]->is_hidden = $oActivity->hide_sitewide === "0" ? false : true;
                     $oReturn->activities[(int) $oActivity->id]->is_spam = $oActivity->is_spam === "0" ? false : true;
                 }
