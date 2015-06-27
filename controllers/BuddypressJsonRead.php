@@ -9,7 +9,78 @@ require_once BUDDYPRESS_JSON_API_HOME . '/library/functions.class.php';
 
 class JSON_API_BuddypressRead_Controller {
 
-    /**
+    public function activity_comments_delete()
+	{
+		$error = '';
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['commentid']){$oReturn->error = __('Wrong Comment Id.','aheadzen'); return $oReturn;}
+		if(!$_POST['activityid']){$oReturn->error = __('Wrong Activity Id.','aheadzen'); return $oReturn;}
+		
+		$comment_id = (int)$_POST['commentid'];
+		$activity_id = (int)$_POST['activityid'];
+		
+		if(bp_activity_delete_comment( $activity_id, $comment_id ))
+		{
+			$oReturn->success->message = __('Activity comment deleted successfully.','aheadzen');			
+		}else{
+			$error = __('Something wrong to delete activity comment.','aheadzen');
+		}
+		
+		$oReturn->error = $error;
+		return  $oReturn;
+	}
+	
+	/**
+     * Supply post data
+     * @param int userid: User ID
+     * @param String content: Activity comment content
+	 * @param int activityid: Activity Id for which you want to add comments
+     * @return array message: success or error message & added activity comment ID
+     */
+	public function activity_comments_add_edit()
+	{		
+		/*//The data only for testing purpose.
+		$_POST['content'] = '123 HELLO THIS IS TEST ACTIVITY Comments FOR ME';
+		$_POST['userid'] = 1;
+		$_POST['activityid'] = 47;
+		*/		
+		$error = '';
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['content']){$oReturn->error = __('Please do not leave the comment area blank.','aheadzen'); return $oReturn;}
+		if(!$_POST['userid']){$oReturn->error = __('Wrong User Id.','aheadzen'); return $oReturn;}
+		if(!$_POST['activityid']){$oReturn->error = __('Wrong Activity Id.','aheadzen'); return $oReturn;}
+		
+		$content = $_POST['content'];
+		$user_id = (int)$_POST['userid'];
+		$activity_id = (int)$_POST['activityid'];
+		
+		$arg = array(
+			'content'    	=> $content,
+			'activity_id' 	=> $activity_id,
+			'user_id' 		=> $user_id
+		);
+		
+		//if($activityid){$arg['id'] = $activityid;} //update activity
+		if($comment_id = bp_activity_new_comment($arg))
+		{
+			$oReturn->success->id = $comment_id;
+			if($activityid){
+				$oReturn->success->message = __('Activity comments updated successfully.','aheadzen');
+			}else{
+				$oReturn->success->message = __('Activity comments added successfully.','aheadzen');
+			}
+		}else{
+			$error = __('Something wrong to updated activity comments.','aheadzen');
+		}
+		$oReturn->error = $error;
+		return  $oReturn;
+	}
+	
+	/**
      * Supply post data
      * @param int userid: User ID
      * @param String content: Activity content
@@ -27,9 +98,9 @@ class JSON_API_BuddypressRead_Controller {
 		$error = '';
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
-		if(!$_POST){return $oReturn->error = __('Not the post method.','aheadzen');}
-		if(!$_POST['content']){return $oReturn->error = __('Empty content.','aheadzen');}
-		if(!$_POST['userid']){return $oReturn->error = __('Wrong User Id.','aheadzen');}
+		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['content']){$oReturn->error = __('Empty content.','aheadzen'); return $oReturn;}
+		if(!$_POST['userid']){$oReturn->error = __('Wrong User Id.','aheadzen'); return $oReturn;}
 		$content = $_POST['content'];
 		$user_id = $_POST['userid'];
 		$activityid = (int)$_POST['activityid'];
@@ -76,9 +147,9 @@ class JSON_API_BuddypressRead_Controller {
 		$error = '';
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
-		if(!$_POST){return $oReturn->error = __('Not the post method.','aheadzen');}
-		if(!$_POST['activityid']){return $oReturn->error = __('Wrong activity Id.','aheadzen');}
-		if(!$_POST['userid']){return $oReturn->error = __('Wrong user Id.','aheadzen');}
+		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['activityid']){$oReturn->error = __('Wrong activity Id.','aheadzen'); return $oReturn;}
+		if(!$_POST['userid']){$oReturn->error = __('Wrong user Id.','aheadzen'); return $oReturn;}
 		$user_id = $_POST['userid'];
 		$activityid = (int)$_POST['activityid'];
 		
@@ -87,7 +158,7 @@ class JSON_API_BuddypressRead_Controller {
 					'user_id' 	=> $user_id
 				);
 		if ( bp_activity_delete($arg)){
-			$oReturn->message = __( 'Activity deleted successfully', 'aheadzen');
+			$oReturn->success->message = __( 'Activity deleted successfully', 'aheadzen');
 		}else{
 			$error =  __( 'There was an error when deleting that activity', 'aheadzen' );
 		}
@@ -106,8 +177,8 @@ class JSON_API_BuddypressRead_Controller {
 		*/		
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
-		if(!$_POST){return $oReturn->message = __('Not the post method.','aheadzen');}
-		if(!$_POST['picture_code']){return $oReturn->message = __('Wrong picture.','aheadzen');}
+		if(!$_POST){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['picture_code']){$oReturn->message = __('Wrong picture.','aheadzen'); return $oReturn;}
 		
 		$clicked_pic = $_POST['clicked_pic'];
 		$user_id = $_POST['user_id'];
@@ -179,10 +250,10 @@ class JSON_API_BuddypressRead_Controller {
 		
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
-		if(!$_POST){return $oReturn->message = __('Not the post method.','aheadzen');}
-		if(!$_POST['data']){return $oReturn->message = __('Wrong post data.','aheadzen');}
+		if(!$_POST){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['data']){$oReturn->message = __('Wrong post data.','aheadzen'); return $oReturn;}
 		$userid = $_POST['userid'];
-		if(!$userid){return $oReturn->message = 'Wrong user ID.';}
+		if(!$userid){$oReturn->message = 'Wrong user ID.'; return $oReturn;}
 		if (!bp_has_profile(array('user_id' => $userid))) {
 			return $this->error('xprofile', 0);
 		}

@@ -209,3 +209,9 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 
 * "activity_add_edit" to activity add/edit added
 * "activity_delete" to delete activity
+
+
+=1.0.3=
+
+* Activity add reply/comment added.
+* Activity  delete reply added.

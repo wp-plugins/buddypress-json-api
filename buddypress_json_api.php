@@ -6,7 +6,7 @@ Description: JSON API additional features to be used with Buddypress of profile 
 Author: Aheadzen Team
 Author URI: http://aheadzen.com/
 Text Domain: aheadzen
-Version: 1.0.2
+Version: 1.0.3
 */
 
 include_once( ABSPATH . 'wp-admin/includes/plugin.php' );
