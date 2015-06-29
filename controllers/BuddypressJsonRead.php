@@ -296,8 +296,6 @@ class JSON_API_BuddypressRead_Controller {
     public function activity_get_activities() {
         $oReturn = new stdClass();
         $this->init('activity', 'see_activity');
-		$this->userid = 1;
-		$this->sort = 'DESC';
 		
         if (!bp_has_activities())
             return $this->error('activity');
