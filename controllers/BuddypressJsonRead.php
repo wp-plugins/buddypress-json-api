@@ -296,7 +296,9 @@ class JSON_API_BuddypressRead_Controller {
     public function activity_get_activities() {
         $oReturn = new stdClass();
         $this->init('activity', 'see_activity');
-
+		$this->userid = 1;
+		$this->sort = 'DESC';
+		
         if (!bp_has_activities())
             return $this->error('activity');
         if ($this->pages !== 1) {
@@ -307,6 +309,7 @@ class JSON_API_BuddypressRead_Controller {
 
         $aParams ['display_comments'] = $this->comments;
         $aParams ['sort'] = $this->sort;
+	   
 		
 		
         $aParams ['filter'] ['user_id'] = $this->userid;
@@ -324,8 +327,7 @@ class JSON_API_BuddypressRead_Controller {
 			
 			$aTempActivities = bp_activity_get($aParams);
 			
-
-            if (!empty($aTempActivities['activities'])) {
+			if (!empty($aTempActivities['activities'])) {
                 foreach ($aTempActivities['activities'] as $oActivity) {
 					
 					$user = new BP_Core_User($oActivity->user_id);
@@ -355,7 +357,48 @@ class JSON_API_BuddypressRead_Controller {
 					$oReturn->activities[(int) $oActivity->id]->content = $oActivity->content;
                     $oReturn->activities[(int) $oActivity->id]->is_hidden = $oActivity->hide_sitewide === "0" ? false : true;
                     $oReturn->activities[(int) $oActivity->id]->is_spam = $oActivity->is_spam === "0" ? false : true;
+					
+					if($oActivity->children){
+						/*children*/
+						$counter=0;
+						foreach($oActivity->children as $childoActivity){
+						if($user && $user->avatar){
+							if($user->avatar){
+								preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+								$childoActivity->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+							}
+							if($user->avatar_thumb){
+								preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+								$childoActivity->avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+							}
+							//preg_match_all('/(src)=("[^"]*")/i',$user->avatar_mini, $user_avatar_result);
+							//$oActivity->avatar_mini = str_replace('"','',$user_avatar_result[2][0]);
+						}
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->id = $childoActivity->id;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->component = $childoActivity->component;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->user->id = $childoActivity->user_id;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->user->username = $childoActivity->user_login;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->user->mail = $childoActivity->user_email;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->user->display_name = $childoActivity->display_name;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->user->avatar_big = $childoActivity->avatar_big;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->user->avatar_thumb = $childoActivity->avatar_thumb;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->type = $childoActivity->type;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->time = $childoActivity->date_recorded;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->action = $childoActivity->action;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->content = $childoActivity->content;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->is_hidden = $childoActivity->hide_sitewide === "0" ? false : true;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->is_spam = $childoActivity->is_spam === "0" ? false : true;
+						$user = new BP_Core_User($childoActivity->user_id);
+						
+						$counter++;
+						}
+						
+					}
                 }
+				
+				/*echo '<pre>';
+				print_r($oActivity->children);
+				exit;*/
 				//echo '<pre>';print_r($oReturn->activities);echo '</pre>';
                 $oReturn->count = count($aTempActivities['activities']);
             } else {

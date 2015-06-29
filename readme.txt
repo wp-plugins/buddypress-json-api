@@ -213,5 +213,9 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 
 =1.0.3=
 
-* Activity add reply/comment added.
+* Activity comment add and edit feature added.
 * Activity  delete reply added.
+
+=1.0.4=
+
+* Activity comment as child activity added to display comments as nested comment for "activity_get_activities".
