@@ -297,6 +297,11 @@ class JSON_API_BuddypressRead_Controller {
         $oReturn = new stdClass();
         $this->init('activity', 'see_activity');
 		
+		if(!$this->userid && $_GET['username']){
+			$oUser = get_user_by('login', $_GET['username']);
+			if($oUser){$this->userid = $oUser->data->ID;}
+		}
+		
         if (!bp_has_activities())
             return $this->error('activity');
         if ($this->pages !== 1) {
@@ -306,9 +311,7 @@ class JSON_API_BuddypressRead_Controller {
         }
 
         $aParams ['display_comments'] = $this->comments;
-        $aParams ['sort'] = $this->sort;
-	   
-		
+        $aParams ['sort'] = $this->sort;		
 		
         $aParams ['filter'] ['user_id'] = $this->userid;
         $aParams ['filter'] ['object'] = $this->component;
@@ -516,6 +519,7 @@ class JSON_API_BuddypressRead_Controller {
 				$oReturn->profilefields->photo->avatar_thumb = $avatar_thumb_src;
 				$oReturn->profilefields->photo->avatar_mini = $avatar_mini_src;
 				$oReturn->profilefields->user->username = $user->profile_data['user_login'];
+				$oReturn->profilefields->user->userid = $userid;			
 				
 			}
 			/* CUstom changes VAJ - 09-06-2015*/
