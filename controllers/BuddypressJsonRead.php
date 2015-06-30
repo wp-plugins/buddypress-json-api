@@ -66,7 +66,7 @@ class JSON_API_BuddypressRead_Controller {
 			'parent_id'   => false
 		);
 		
-		if($activityid){$arg['id'] = $commentid;} //update activity comment
+		if($commentid){$arg['id'] = $commentid;} //update activity comment
 		if($comment_id = bp_activity_new_comment($arg))
 		{
 			$oReturn->success->id = $comment_id;
