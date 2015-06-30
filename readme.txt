@@ -224,3 +224,8 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 
 * For "activity_get_activities" you have to pass user id but now by username it will work.
 * "profile_get_profile" api will return user id in case you try to get user detail by username.
+
+
+=1.0.6=
+
+* Edit activity comment feature added.

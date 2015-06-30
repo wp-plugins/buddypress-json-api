@@ -57,14 +57,16 @@ class JSON_API_BuddypressRead_Controller {
 		$content = $_POST['content'];
 		$user_id = (int)$_POST['userid'];
 		$activity_id = (int)$_POST['activityid'];
+		$commentid = (int)$_POST['commentid'];
 		
 		$arg = array(
 			'content'    	=> $content,
 			'activity_id' 	=> $activity_id,
-			'user_id' 		=> $user_id
+			'user_id' 		=> $user_id,
+			'parent_id'   => false
 		);
 		
-		//if($activityid){$arg['id'] = $activityid;} //update activity
+		if($activityid){$arg['id'] = $commentid;} //update activity comment
 		if($comment_id = bp_activity_new_comment($arg))
 		{
 			$oReturn->success->id = $comment_id;
@@ -376,6 +378,7 @@ class JSON_API_BuddypressRead_Controller {
 							//$oActivity->avatar_mini = str_replace('"','',$user_avatar_result[2][0]);
 						}
 						$oReturn->activities[(int) $oActivity->id]->children->$counter->id = $childoActivity->id;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->item_id = $childoActivity->item_id;
 						$oReturn->activities[(int) $oActivity->id]->children->$counter->component = $childoActivity->component;
 						$oReturn->activities[(int) $oActivity->id]->children->$counter->user->id = $childoActivity->user_id;
 						$oReturn->activities[(int) $oActivity->id]->children->$counter->user->username = $childoActivity->user_login;
