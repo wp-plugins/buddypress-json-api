@@ -235,3 +235,7 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 
 * Added New API function for mentions :: "activity_get_mentions"
 	--send "username" in POST method.
+	
+=1.0.8=
+
+* Mentions empty message display - problem solved.

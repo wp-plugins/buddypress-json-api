@@ -20,6 +20,11 @@ class JSON_API_BuddypressRead_Controller {
     public function activity_get_mentions() {
         header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
+		$oReturn->msg = '';
+		$oReturn->error = '';
+		
+		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
+		
 		$username = $_POST['username'];
 		$maxlimit = $_POST['maxlimit'];
 		$page = $_POST['pages'];
@@ -27,10 +32,8 @@ class JSON_API_BuddypressRead_Controller {
 		if(!$page){$page=1;}
 		if(!$maxlimit){$maxlimit=20;}
 		if(!$orderby){$orderby='DESC';}
-		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
 		if(!$username){$oReturn->error = __('Wrong User Name.','aheadzen'); return $oReturn;}
 		if(!username_exists($username)){return $this->error('xprofile', 1);}
-		$oReturn->msg = '';
 		
 		$start = $maxlimit*($page-1);
 		$end = $maxlimit;
