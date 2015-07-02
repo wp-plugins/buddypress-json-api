@@ -9,7 +9,75 @@ require_once BUDDYPRESS_JSON_API_HOME . '/library/functions.class.php';
 
 class JSON_API_BuddypressRead_Controller {
 
-    public function activity_comments_delete()
+    /**
+     * Returns an Array with all mentions
+     * @param int pages: number of pages to display (default 1)
+     * @param int maxlimit: number of maximum results (default 20)
+	 * @param String sort: sort ASC or DESC (default DESC)
+     * @param String username: username to filter on, comma-separated for more than one ID (default unset)
+     * @return array mentions: an array containing the mentions
+     */
+    public function activity_get_mentions() {
+        header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$username = $_POST['username'];
+		$maxlimit = $_POST['maxlimit'];
+		$page = $_POST['pages'];
+		$orderby = $_POST['sort'];
+		if(!$page){$page=1;}
+		if(!$maxlimit){$maxlimit=20;}
+		if(!$orderby){$orderby='DESC';}
+		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$username){$oReturn->error = __('Wrong User Name.','aheadzen'); return $oReturn;}
+		if(!username_exists($username)){return $this->error('xprofile', 1);}
+		
+		$start = $maxlimit*($page-1);
+		$end = $maxlimit;
+		global $wpdb,$table_prefix;
+		$total_count = $wpdb->get_var("select count(id) from ".$table_prefix."bp_activity where content like \"%@".$username."%\"");
+		$sql = "select id,user_id,component,type,content,date_recorded from ".$table_prefix."bp_activity where content like \"%@".$username."%\" order by date_recorded $orderby limit $start,$end";
+		$res = $wpdb->get_results($sql);
+		$oReturn->total_count = $total_count;
+		if($res){
+			foreach($res as $oMentions){
+				$user = new BP_Core_User($oMentions->user_id);
+				if($user && $user->avatar){
+					$oMentions->fullname = $user->fullname;
+					$oMentions->email = $user->email;
+					$oMentions->user_url = $user->user_url;
+					if($user->user_url){
+						$oMentions->username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
+					}
+					if($user->avatar){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+						$oMentions->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+					}
+					if($user->avatar_thumb){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+						$oMentions->avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+					}
+				}
+				
+				$oReturn->mentions[(int) $oMentions->id]->component = $oMentions->component;
+				$oReturn->mentions[(int) $oMentions->id]->type = $oMentions->type;
+				$oReturn->mentions[(int) $oMentions->id]->content = $oMentions->content;
+				$oReturn->mentions[(int) $oMentions->id]->time = $oMentions->date_recorded;
+				$oReturn->mentions[(int) $oMentions->id]->user->id = $oMentions->user_id;
+				$oReturn->mentions[(int) $oMentions->id]->user->fullname = $oMentions->fullname;
+				$oReturn->mentions[(int) $oMentions->id]->user->email = $oMentions->email;
+				$oReturn->mentions[(int) $oMentions->id]->user->username = $oMentions->username;
+				$oReturn->mentions[(int) $oMentions->id]->user->user_url = $oMentions->user_url;
+				$oReturn->mentions[(int) $oMentions->id]->user->avatar_thumb = $oMentions->avatar_thumb;
+				$oReturn->mentions[(int) $oMentions->id]->user->avatar_big = $oMentions->avatar_big;
+			}
+		}else{
+			$oReturn->msg = __('No Mentions Available To Display.','aheadzen');
+		}
+		return $oReturn;
+    }
+	
+	
+	public function activity_comments_delete()
 	{
 		$error = '';
 		header("Access-Control-Allow-Origin: *");

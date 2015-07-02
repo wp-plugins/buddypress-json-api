@@ -229,3 +229,9 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 =1.0.6=
 
 * Edit activity comment feature added.
+
+
+=1.0.7=
+
+* Added New API function for mentions :: "activity_get_mentions"
+	--send "username" in POST method.
