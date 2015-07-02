@@ -30,6 +30,7 @@ class JSON_API_BuddypressRead_Controller {
 		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
 		if(!$username){$oReturn->error = __('Wrong User Name.','aheadzen'); return $oReturn;}
 		if(!username_exists($username)){return $this->error('xprofile', 1);}
+		$oReturn->msg = '';
 		
 		$start = $maxlimit*($page-1);
 		$end = $maxlimit;
