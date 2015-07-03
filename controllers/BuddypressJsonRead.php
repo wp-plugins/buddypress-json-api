@@ -73,10 +73,12 @@ class JSON_API_BuddypressRead_Controller {
 				$oReturn->mentions[(int) $oMentions->id]->user->user_url = $oMentions->user_url;
 				$oReturn->mentions[(int) $oMentions->id]->user->avatar_thumb = $oMentions->avatar_thumb;
 				$oReturn->mentions[(int) $oMentions->id]->user->avatar_big = $oMentions->avatar_big;
+				
 			}
 		}else{
 			$oReturn->msg = __('No Mentions Available To Display.','aheadzen');
 		}
+		
 		return $oReturn;
     }
 	
@@ -433,6 +435,31 @@ class JSON_API_BuddypressRead_Controller {
                     $oReturn->activities[(int) $oActivity->id]->is_hidden = $oActivity->hide_sitewide === "0" ? false : true;
                     $oReturn->activities[(int) $oActivity->id]->is_spam = $oActivity->is_spam === "0" ? false : true;
 					
+					$total_votes = $total_up = $total_down = 0;
+					$uplink = $downlink = '#';
+					if(class_exists('VoterPluginClass'))
+					{
+						$arg = array(
+							'item_id'=>$oActivity->id,
+							'user_id'=>$oActivity->user_id,
+							'type'=>'activity',
+							);
+						
+						$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
+						$votes = json_decode($votes_str);
+						$total_votes = $votes->total_votes;
+						$total_up = $votes->total_up;
+						$total_down = $votes->total_down;
+						$uplink = $votes->post_voter_links->up;
+						$downlink = $votes->post_voter_links->down;
+					}
+					
+					$oReturn->activities[(int) $oActivity->id]->vote->total_votes = $total_votes;
+					$oReturn->activities[(int) $oActivity->id]->vote->total_up = $total_up;
+					$oReturn->activities[(int) $oActivity->id]->vote->total_down = $total_down;
+					$oReturn->activities[(int) $oActivity->id]->vote->uplink = $uplink;
+					$oReturn->activities[(int) $oActivity->id]->vote->downlink = $downlink;
+				
 					if($oActivity->children){
 						/*children*/
 						$counter=0;
@@ -466,6 +493,30 @@ class JSON_API_BuddypressRead_Controller {
 						$oReturn->activities[(int) $oActivity->id]->children->$counter->is_spam = $childoActivity->is_spam === "0" ? false : true;
 						$user = new BP_Core_User($childoActivity->user_id);
 						
+						$total_votes = $total_up = $total_down = 0;
+						$uplink = $downlink = '#';
+						if(class_exists('VoterPluginClass'))
+						{
+							$arg = array(
+								'item_id'=>$childoActivity->id,
+								'user_id'=>$childoActivity->user_id,
+								'type'=>$childoActivity->type,
+								);					
+							$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
+							$votes = json_decode($votes_str);
+							$total_votes = $votes->total_votes;
+							$total_up = $votes->total_up;
+							$total_down = $votes->total_down;
+							$uplink = $votes->post_voter_links->up;
+							$downlink = $votes->post_voter_links->down;
+						}
+						
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->vote->total_votes = $total_votes;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->vote->total_up = $total_up;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->vote->total_down = $total_down;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->vote->uplink = $uplink;
+						$oReturn->activities[(int) $oActivity->id]->children->$counter->vote->downlink = $downlink;
+					
 						$counter++;
 						}
 						

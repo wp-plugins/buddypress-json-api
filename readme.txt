@@ -239,3 +239,7 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 =1.0.8=
 
 * Mentions empty message display - problem solved.
+
+=1.0.9=
+
+* Activity voting plugin feature added so user can now display total votes, up & down link for voting
