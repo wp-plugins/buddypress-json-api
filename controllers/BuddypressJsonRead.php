@@ -20,7 +20,10 @@ class JSON_API_BuddypressRead_Controller {
         header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
 		$oReturn->msg = '';
+		$oReturn->success = '';
 		$oReturn->error = '';
+		
+		$_POST['username']='admin';
 		
 		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
 		
@@ -90,6 +93,7 @@ class JSON_API_BuddypressRead_Controller {
 		$error = '';
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
+		$oReturn->success = '';
 		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
 		if(!$_POST['commentid']){$oReturn->error = __('Wrong Comment Id.','aheadzen'); return $oReturn;}
 		if(!$_POST['activityid']){$oReturn->error = __('Wrong Activity Id.','aheadzen'); return $oReturn;}
@@ -125,6 +129,7 @@ class JSON_API_BuddypressRead_Controller {
 		$error = '';
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
+		$oReturn->success = '';
 		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
 		if(!$_POST['content']){$oReturn->error = __('Please do not leave the comment area blank.','aheadzen'); return $oReturn;}
 		if(!$_POST['userid']){$oReturn->error = __('Wrong User Id.','aheadzen'); return $oReturn;}
@@ -176,6 +181,7 @@ class JSON_API_BuddypressRead_Controller {
 		$error = '';
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
+		$oReturn->success = '';
 		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
 		if(!$_POST['content']){$oReturn->error = __('Empty content.','aheadzen'); return $oReturn;}
 		if(!$_POST['userid']){$oReturn->error = __('Wrong User Id.','aheadzen'); return $oReturn;}
@@ -225,6 +231,7 @@ class JSON_API_BuddypressRead_Controller {
 		$error = '';
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
+		$oReturn->success = '';
 		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
 		if(!$_POST['activityid']){$oReturn->error = __('Wrong activity Id.','aheadzen'); return $oReturn;}
 		if(!$_POST['userid']){$oReturn->error = __('Wrong user Id.','aheadzen'); return $oReturn;}
@@ -255,6 +262,7 @@ class JSON_API_BuddypressRead_Controller {
 		*/		
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
+		$oReturn->success = '';
 		if(!$_POST){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
 		if(!$_POST['picture_code']){$oReturn->message = __('Wrong picture.','aheadzen'); return $oReturn;}
 		
@@ -305,6 +313,7 @@ class JSON_API_BuddypressRead_Controller {
 					'component' => 'profile',
 					'type'      => 'new_avatar'
 				) );
+				$oReturn->success->msg = 'Image uploaded successfully.';
 			}else{
 				$error = 'Upload error';
 			}
@@ -328,6 +337,7 @@ class JSON_API_BuddypressRead_Controller {
 		
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
+		$oReturn->success = '';
 		if(!$_POST){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
 		if(!$_POST['data']){$oReturn->message = __('Wrong post data.','aheadzen'); return $oReturn;}
 		$userid = $_POST['userid'];
@@ -373,6 +383,7 @@ class JSON_API_BuddypressRead_Controller {
      */
     public function activity_get_activities() {
         $oReturn = new stdClass();
+		$oReturn->success = '';
         $this->init('activity', 'see_activity');
 		
 		if(!$this->userid && $_GET['username']){
@@ -601,6 +612,7 @@ class JSON_API_BuddypressRead_Controller {
 			$this->username = $_GET['username'];
 			$this->init('xprofile');
 			$oReturn = new stdClass();
+			$oReturn->success = '';
 			$error=0;
 			
 			if(($this->userid=='' && $this->username === false) || ($this->username && !username_exists($this->username))) {
