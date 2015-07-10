@@ -29,6 +29,7 @@ class JSON_API_BuddypressRead_Controller {
 		$maxlimit = $_POST['maxlimit'];
 		$page = $_POST['pages'];
 		$orderby = $_POST['sort'];
+		
 		if(!$page){$page=1;}
 		if(!$maxlimit){$maxlimit=20;}
 		if(!$orderby){$orderby='DESC';}
@@ -41,7 +42,8 @@ class JSON_API_BuddypressRead_Controller {
 		$total_count = $wpdb->get_var("select count(id) from ".$table_prefix."bp_activity where content like \"%@".$username."%\"");
 		$sql = "select id,user_id,component,type,content,date_recorded from ".$table_prefix."bp_activity where content like \"%@".$username."%\" order by date_recorded $orderby limit $start,$end";
 		$res = $wpdb->get_results($sql);
-		$oReturn->total_count = $total_count;
+		 $oReturn->total_count = $total_count;
+		 $oReturn->total_pages = ceil($total_count/$maxlimit);
 		if($res){
 			$counter=0;
 			foreach($res as $oMentions){
@@ -379,7 +381,185 @@ class JSON_API_BuddypressRead_Controller {
      * @param int secondaryitemid: secondary object ID to filter on e.g. a post_id (default unset)
      * @return array activities: an array containing the activities
      */
-    public function activity_get_activities() {
+	 public function activity_get_activities() {
+        $oReturn = new stdClass();
+		$oReturn->success = '';
+        $this->init('activity', 'see_activity');
+		
+		
+		if(!$this->userid && $_GET['username']){
+			$oUser = get_user_by('login', $_GET['username']);
+			if($oUser){$this->userid = $oUser->data->ID;}
+		}
+		
+		//$this->userid='';
+		
+		
+        if (!bp_has_activities())
+            return $this->error('activity');
+        if ($this->pages !== 1) {
+            $aParams ['max'] = true;
+            $aParams ['per_page'] = $this->offset;
+            $iPages = $this->pages;
+        }
+
+        $aParams ['display_comments'] = $this->comments;
+        $aParams ['sort'] = $this->sort;		
+		
+        $aParams ['filter'] ['user_id'] = $this->userid;
+        $aParams ['filter'] ['object'] = $this->component;
+        $aParams ['filter'] ['type'] = $this->type;
+        $aParams ['filter'] ['primary_id'] = $this->itemid;
+        $aParams ['filter'] ['secondary_id'] = $this->secondaryitemid;
+        $iLimit = $this->limit;
+		
+		$page = $_GET['thepage'];
+		if(!$page){$page=1;}
+		$per_page = $_GET['per_page'];
+		if(!$per_page){$per_page=10;}
+		$count_total = $_GET['count_total'];
+		if(!$count_total){$count_total=100;}
+		
+		$aParams['page']=$page;
+		$aParams['per_page']=$per_page;
+		$aParams['count_total']=$count_total;
+		$aTempActivities = bp_activity_get($aParams);
+		
+		if (!empty($aTempActivities['activities'])) {
+				$acounter=0;
+                foreach ($aTempActivities['activities'] as $oActivity) {
+					
+					$user = new BP_Core_User($oActivity->user_id);
+					if($user && $user->avatar){
+						if($user->avatar){
+							preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+							$oActivity->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+						}
+						if($user->avatar_thumb){
+							preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+							$oActivity->avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+						}
+						//preg_match_all('/(src)=("[^"]*")/i',$user->avatar_mini, $user_avatar_result);
+						//$oActivity->avatar_mini = str_replace('"','',$user_avatar_result[2][0]);
+					}
+					
+					$oReturn->activities[$acounter]->id = $oActivity->id;
+					$oReturn->activities[$acounter]->component = $oActivity->component;
+                    $oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->id = $oActivity->user_id;
+					$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->username = $oActivity->user_login;
+                    $oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->mail = $oActivity->user_email;
+                    $oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->display_name = $oActivity->display_name;
+					$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->avatar_big = $oActivity->avatar_big;
+					$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->avatar_thumb = $oActivity->avatar_thumb;
+                    $oReturn->activities[$acounter]->type = $oActivity->type;
+                    $oReturn->activities[$acounter]->time = $oActivity->date_recorded;
+					$oReturn->activities[$acounter]->action = $oActivity->action;
+					$oReturn->activities[$acounter]->content = $oActivity->content;
+                    $oReturn->activities[$acounter]->is_hidden = $oActivity->hide_sitewide === "0" ? false : true;
+                    $oReturn->activities[$acounter]->is_spam = $oActivity->is_spam === "0" ? false : true;
+					
+					$total_votes = $total_up = $total_down = 0;
+					$uplink = $downlink = '#';
+					if(class_exists('VoterPluginClass'))
+					{
+						$arg = array(
+							'item_id'=>$oActivity->id,
+							'user_id'=>$oActivity->user_id,
+							'type'=>'activity',
+							);
+						
+						$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
+						$votes = json_decode($votes_str);
+						$total_votes = $votes->total_votes;
+						$total_up = $votes->total_up;
+						$total_down = $votes->total_down;
+						$uplink = $votes->post_voter_links->up;
+						$downlink = $votes->post_voter_links->down;
+					}
+					
+					$oReturn->activities[$acounter]->vote->total_votes = $total_votes;
+					$oReturn->activities[$acounter]->vote->total_up = $total_up;
+					$oReturn->activities[$acounter]->vote->total_down = $total_down;
+					$oReturn->activities[$acounter]->vote->uplink = $uplink;
+					$oReturn->activities[$acounter]->vote->downlink = $downlink;
+				
+					if($oActivity->children){
+						/*children*/
+						$counter=0;
+						foreach($oActivity->children as $childoActivity){
+						if($user && $user->avatar){
+							if($user->avatar){
+								preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+								$childoActivity->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+							}
+							if($user->avatar_thumb){
+								preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+								$childoActivity->avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+							}
+							//preg_match_all('/(src)=("[^"]*")/i',$user->avatar_mini, $user_avatar_result);
+							//$oActivity->avatar_mini = str_replace('"','',$user_avatar_result[2][0]);
+						}
+						$oReturn->activities[$acounter]->children->$counter->id = $childoActivity->id;
+						$oReturn->activities[$acounter]->children->$counter->item_id = $childoActivity->item_id;
+						$oReturn->activities[$acounter]->children->$counter->component = $childoActivity->component;
+						$oReturn->activities[$acounter]->children->$counter->user->id = $childoActivity->user_id;
+						$oReturn->activities[$acounter]->children->$counter->user->username = $childoActivity->user_login;
+						$oReturn->activities[$acounter]->children->$counter->user->mail = $childoActivity->user_email;
+						$oReturn->activities[$acounter]->children->$counter->user->display_name = $childoActivity->display_name;
+						$oReturn->activities[$acounter]->children->$counter->user->avatar_big = $childoActivity->avatar_big;
+						$oReturn->activities[$acounter]->children->$counter->user->avatar_thumb = $childoActivity->avatar_thumb;
+						$oReturn->activities[$acounter]->children->$counter->type = $childoActivity->type;
+						$oReturn->activities[$acounter]->children->$counter->time = $childoActivity->date_recorded;
+						$oReturn->activities[$acounter]->children->$counter->action = $childoActivity->action;
+						$oReturn->activities[$acounter]->children->$counter->content = $childoActivity->content;
+						$oReturn->activities[$acounter]->children->$counter->is_hidden = $childoActivity->hide_sitewide === "0" ? false : true;
+						$oReturn->activities[$acounter]->children->$counter->is_spam = $childoActivity->is_spam === "0" ? false : true;
+						$user = new BP_Core_User($childoActivity->user_id);
+						
+						$total_votes = $total_up = $total_down = 0;
+						$uplink = $downlink = '#';
+						if(class_exists('VoterPluginClass'))
+						{
+							$arg = array(
+								'item_id'=>$childoActivity->id,
+								'user_id'=>$childoActivity->user_id,
+								'type'=>$childoActivity->type,
+								);					
+							$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
+							$votes = json_decode($votes_str);
+							$total_votes = $votes->total_votes;
+							$total_up = $votes->total_up;
+							$total_down = $votes->total_down;
+							$uplink = $votes->post_voter_links->up;
+							$downlink = $votes->post_voter_links->down;
+						}
+						
+						$oReturn->activities[$acounter]->children->$counter->vote->total_votes = $total_votes;
+						$oReturn->activities[$acounter]->children->$counter->vote->total_up = $total_up;
+						$oReturn->activities[$acounter]->children->$counter->vote->total_down = $total_down;
+						$oReturn->activities[$acounter]->children->$counter->vote->uplink = $uplink;
+						$oReturn->activities[$acounter]->children->$counter->vote->downlink = $downlink;
+					
+						$counter++;
+						}
+						
+					}
+					$acounter++;
+                }
+				
+				/*echo '<pre>';
+				print_r($oActivity->children);
+				exit;*/
+				//echo '<pre>';print_r($oReturn->activities);echo '</pre>';
+				$oReturn->total_pages = ceil($aTempActivities['total']/$per_page);
+				$oReturn->total_count = $aTempActivities['total'];
+            } else {
+                return $this->error('activity');
+            }
+            return $oReturn;
+	}
+	
+	public function activity_get_activities_old() {
         $oReturn = new stdClass();
 		$oReturn->success = '';
         $this->init('activity', 'see_activity');
@@ -388,6 +568,7 @@ class JSON_API_BuddypressRead_Controller {
 			$oUser = get_user_by('login', $_GET['username']);
 			if($oUser){$this->userid = $oUser->data->ID;}
 		}
+		
 		
         if (!bp_has_activities())
             return $this->error('activity');
@@ -412,7 +593,7 @@ class JSON_API_BuddypressRead_Controller {
             if ($iLimit != 0)
                 $aParams['per_page'] = $iLimit;
             
-			
+
 			$aTempActivities = bp_activity_get($aParams);
 			
 			if (!empty($aTempActivities['activities'])) {
@@ -549,7 +730,7 @@ class JSON_API_BuddypressRead_Controller {
         }
 
         for ($i = 1; $i <= $iPages; $i++) {
-            if ($iLimit != 0 && ($i * $aParams['per_page']) > $iLimit) {
+			if ($iLimit != 0 && ($i * $aParams['per_page']) > $iLimit) {
                 $aParams['per_page'] = $aParams['per_page'] - (($i * $aParams['per_page']) - $iLimit);
                 $bLastRun = true;
             }
