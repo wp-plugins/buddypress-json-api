@@ -23,8 +23,6 @@ class JSON_API_BuddypressRead_Controller {
 		$oReturn->success = '';
 		$oReturn->error = '';
 		
-		$_POST['username']='admin';
-		
 		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
 		
 		$username = $_POST['username'];
