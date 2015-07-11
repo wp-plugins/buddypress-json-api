@@ -259,3 +259,8 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 =1.0.12=
 
 * mention view activity and add/edit feature added
+
+
+=1.0.13=
+
+* activity comment extra display removed, profile & profile photo change activity content changed.

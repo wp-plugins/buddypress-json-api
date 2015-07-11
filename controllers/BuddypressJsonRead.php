@@ -442,101 +442,55 @@ class JSON_API_BuddypressRead_Controller {
 				$acounter=0;
                 foreach ($aTempActivities['activities'] as $oActivity) {
 					
-					$user = new BP_Core_User($oActivity->user_id);
-					if($user && $user->avatar){
-						if($user->avatar){
-							preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
-							$oActivity->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
-						}
-						if($user->avatar_thumb){
-							preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
-							$oActivity->avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
-						}
-						//preg_match_all('/(src)=("[^"]*")/i',$user->avatar_mini, $user_avatar_result);
-						//$oActivity->avatar_mini = str_replace('"','',$user_avatar_result[2][0]);
-					}
-					$oReturn->activities[$acounter]->id = $oActivity->id;
-					$oReturn->activities[$acounter]->component = $oActivity->component;
-                    $oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->id = $oActivity->user_id;
-					$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->username = $oActivity->user_login;
-                    $oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->mail = $oActivity->user_email;
-                    $oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->display_name = $fullname;
-					$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->avatar_big = $oActivity->avatar_big;
-					$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->avatar_thumb = $oActivity->avatar_thumb;
-                    $oReturn->activities[$acounter]->type = $oActivity->type;
-                    $oReturn->activities[$acounter]->time = $oActivity->date_recorded;
-					$oReturn->activities[$acounter]->action = $oActivity->action;
-					$oReturn->activities[$acounter]->content = $oActivity->content;
-                    $oReturn->activities[$acounter]->is_hidden = $oActivity->hide_sitewide === "0" ? false : true;
-                    $oReturn->activities[$acounter]->is_spam = $oActivity->is_spam === "0" ? false : true;
-					
-					$total_votes = $total_up = $total_down = 0;
-					$uplink = $downlink = '#';
-					if(class_exists('VoterPluginClass'))
-					{
-						$arg = array(
-							'item_id'=>$oActivity->id,
-							'user_id'=>$oActivity->user_id,
-							'type'=>'activity',
-							);
+					if($oActivity->type=='activity_comment'){
 						
-						$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
-						$votes = json_decode($votes_str);
-						$total_votes = $votes->total_votes;
-						$total_up = $votes->total_up;
-						$total_down = $votes->total_down;
-						$uplink = $votes->post_voter_links->up;
-						$downlink = $votes->post_voter_links->down;
-					}
-					
-					$oReturn->activities[$acounter]->vote->total_votes = $total_votes;
-					$oReturn->activities[$acounter]->vote->total_up = $total_up;
-					$oReturn->activities[$acounter]->vote->total_down = $total_down;
-					$oReturn->activities[$acounter]->vote->uplink = $uplink;
-					$oReturn->activities[$acounter]->vote->downlink = $downlink;
-				
-					if($oActivity->children){
-						/*children*/
-						$counter=0;
-						foreach($oActivity->children as $childoActivity){
+					}else{
+						$user = new BP_Core_User($oActivity->user_id);
 						if($user && $user->avatar){
 							if($user->avatar){
 								preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
-								$childoActivity->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+								$oActivity->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
 							}
 							if($user->avatar_thumb){
 								preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
-								$childoActivity->avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+								$oActivity->avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
 							}
 							//preg_match_all('/(src)=("[^"]*")/i',$user->avatar_mini, $user_avatar_result);
 							//$oActivity->avatar_mini = str_replace('"','',$user_avatar_result[2][0]);
 						}
-						$oReturn->activities[$acounter]->children->$counter->id = $childoActivity->id;
-						$oReturn->activities[$acounter]->children->$counter->item_id = $childoActivity->item_id;
-						$oReturn->activities[$acounter]->children->$counter->component = $childoActivity->component;
-						$oReturn->activities[$acounter]->children->$counter->user->id = $childoActivity->user_id;
-						$oReturn->activities[$acounter]->children->$counter->user->username = $childoActivity->user_login;
-						$oReturn->activities[$acounter]->children->$counter->user->mail = $childoActivity->user_email;
-						$oReturn->activities[$acounter]->children->$counter->user->display_name = $childoActivity->display_name;
-						$oReturn->activities[$acounter]->children->$counter->user->avatar_big = $childoActivity->avatar_big;
-						$oReturn->activities[$acounter]->children->$counter->user->avatar_thumb = $childoActivity->avatar_thumb;
-						$oReturn->activities[$acounter]->children->$counter->type = $childoActivity->type;
-						$oReturn->activities[$acounter]->children->$counter->time = $childoActivity->date_recorded;
-						$oReturn->activities[$acounter]->children->$counter->action = $childoActivity->action;
-						$oReturn->activities[$acounter]->children->$counter->content = $childoActivity->content;
-						$oReturn->activities[$acounter]->children->$counter->is_hidden = $childoActivity->hide_sitewide === "0" ? false : true;
-						$oReturn->activities[$acounter]->children->$counter->is_spam = $childoActivity->is_spam === "0" ? false : true;
-						$user = new BP_Core_User($childoActivity->user_id);
+						$oReturn->activities[$acounter]->id = $oActivity->id;
+						$oReturn->activities[$acounter]->component = $oActivity->component;
+						$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->id = $oActivity->user_id;
+						$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->username = $oActivity->user_login;
+						$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->mail = $oActivity->user_email;
+						$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->display_name = $oActivity->user_fullname;
+						$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->avatar_big = $oActivity->avatar_big;
+						$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->avatar_thumb = $oActivity->avatar_thumb;
+						$oReturn->activities[$acounter]->type = $oActivity->type;
+						$oReturn->activities[$acounter]->time = $oActivity->date_recorded;
+						
+						if($oActivity->type=='new_avatar'){
+							$oActivity->action = '<a href="'.$oActivity->primary_link.'">'.$oActivity->user_fullname.'</a> changed their profile picture. <br /><img src="'.$oActivity->avatar_thumb.'" alt="" />';
+						}else if($oActivity->type=='updated_profile'){
+							if($oActivity->action=='' && $oActivity->content==''){
+								$oActivity->action = '<a href="'.$oActivity->primary_link.'">'.$oActivity->user_fullname.'</a> changed their profile picture';
+							}										
+						}
+						$oReturn->activities[$acounter]->action = $oActivity->action;
+						$oReturn->activities[$acounter]->content = $oActivity->content;
+						$oReturn->activities[$acounter]->is_hidden = $oActivity->hide_sitewide === "0" ? false : true;
+						$oReturn->activities[$acounter]->is_spam = $oActivity->is_spam === "0" ? false : true;
 						
 						$total_votes = $total_up = $total_down = 0;
 						$uplink = $downlink = '#';
 						if(class_exists('VoterPluginClass'))
 						{
 							$arg = array(
-								'item_id'=>$childoActivity->id,
-								'user_id'=>$childoActivity->user_id,
-								'type'=>$childoActivity->type,
-								);					
+								'item_id'=>$oActivity->id,
+								'user_id'=>$oActivity->user_id,
+								'type'=>'activity',
+								);
+							
 							$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
 							$votes = json_decode($votes_str);
 							$total_votes = $votes->total_votes;
@@ -546,18 +500,76 @@ class JSON_API_BuddypressRead_Controller {
 							$downlink = $votes->post_voter_links->down;
 						}
 						
-						$oReturn->activities[$acounter]->children->$counter->vote->total_votes = $total_votes;
-						$oReturn->activities[$acounter]->children->$counter->vote->total_up = $total_up;
-						$oReturn->activities[$acounter]->children->$counter->vote->total_down = $total_down;
-						$oReturn->activities[$acounter]->children->$counter->vote->uplink = $uplink;
-						$oReturn->activities[$acounter]->children->$counter->vote->downlink = $downlink;
+						$oReturn->activities[$acounter]->vote->total_votes = $total_votes;
+						$oReturn->activities[$acounter]->vote->total_up = $total_up;
+						$oReturn->activities[$acounter]->vote->total_down = $total_down;
+						$oReturn->activities[$acounter]->vote->uplink = $uplink;
+						$oReturn->activities[$acounter]->vote->downlink = $downlink;
 					
-						$counter++;
-						}
+						if($oActivity->children){
+							/*children*/
+							$counter=0;
+							foreach($oActivity->children as $childoActivity){
+							if($user && $user->avatar){
+								if($user->avatar){
+									preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+									$childoActivity->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+								}
+								if($user->avatar_thumb){
+									preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+									$childoActivity->avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+								}
+								//preg_match_all('/(src)=("[^"]*")/i',$user->avatar_mini, $user_avatar_result);
+								//$oActivity->avatar_mini = str_replace('"','',$user_avatar_result[2][0]);
+							}
+							$oReturn->activities[$acounter]->children->$counter->id = $childoActivity->id;
+							$oReturn->activities[$acounter]->children->$counter->item_id = $childoActivity->item_id;
+							$oReturn->activities[$acounter]->children->$counter->component = $childoActivity->component;
+							$oReturn->activities[$acounter]->children->$counter->user->id = $childoActivity->user_id;
+							$oReturn->activities[$acounter]->children->$counter->user->username = $childoActivity->user_login;
+							$oReturn->activities[$acounter]->children->$counter->user->mail = $childoActivity->user_email;
+							$oReturn->activities[$acounter]->children->$counter->user->display_name = $childoActivity->display_name;
+							$oReturn->activities[$acounter]->children->$counter->user->avatar_big = $childoActivity->avatar_big;
+							$oReturn->activities[$acounter]->children->$counter->user->avatar_thumb = $childoActivity->avatar_thumb;
+							$oReturn->activities[$acounter]->children->$counter->type = $childoActivity->type;
+							$oReturn->activities[$acounter]->children->$counter->time = $childoActivity->date_recorded;
+							$oReturn->activities[$acounter]->children->$counter->action = $childoActivity->action;
+							$oReturn->activities[$acounter]->children->$counter->content = $childoActivity->content;
+							$oReturn->activities[$acounter]->children->$counter->is_hidden = $childoActivity->hide_sitewide === "0" ? false : true;
+							$oReturn->activities[$acounter]->children->$counter->is_spam = $childoActivity->is_spam === "0" ? false : true;
+							$user = new BP_Core_User($childoActivity->user_id);
+							
+							$total_votes = $total_up = $total_down = 0;
+							$uplink = $downlink = '#';
+							if(class_exists('VoterPluginClass'))
+							{
+								$arg = array(
+									'item_id'=>$childoActivity->id,
+									'user_id'=>$childoActivity->user_id,
+									'type'=>$childoActivity->type,
+									);					
+								$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
+								$votes = json_decode($votes_str);
+								$total_votes = $votes->total_votes;
+								$total_up = $votes->total_up;
+								$total_down = $votes->total_down;
+								$uplink = $votes->post_voter_links->up;
+								$downlink = $votes->post_voter_links->down;
+							}
+							
+							$oReturn->activities[$acounter]->children->$counter->vote->total_votes = $total_votes;
+							$oReturn->activities[$acounter]->children->$counter->vote->total_up = $total_up;
+							$oReturn->activities[$acounter]->children->$counter->vote->total_down = $total_down;
+							$oReturn->activities[$acounter]->children->$counter->vote->uplink = $uplink;
+							$oReturn->activities[$acounter]->children->$counter->vote->downlink = $downlink;
 						
+							$counter++;
+							}
+							
+						}
+						$acounter++;
 					}
-					$acounter++;
-                }
+				}
 				
 				/*echo '<pre>';
 				print_r($oActivity->children);
