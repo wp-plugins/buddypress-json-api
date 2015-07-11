@@ -8,7 +8,7 @@ require_once BUDDYPRESS_JSON_API_HOME . '/library/functions.class.php';
 
 class JSON_API_BuddypressRead_Controller {
 
-    /**
+   /**
      * Returns an Array with all mentions
      * @param int pages: number of pages to display (default 1)
      * @param int maxlimit: number of maximum results (default 20)
@@ -392,37 +392,50 @@ class JSON_API_BuddypressRead_Controller {
 			if($oUser){$this->userid = $oUser->data->ID;}
 		}
 		
-		//$this->userid='';
+		//$this->userid='1';
 		
+		$mentionid = $_GET['mentionid'];
 		
-        if (!bp_has_activities())
-            return $this->error('activity');
-        if ($this->pages !== 1) {
-            $aParams ['max'] = true;
-            $aParams ['per_page'] = $this->offset;
-            $iPages = $this->pages;
-        }
+		if($mentionid){
+			global $wpdb,$table_prefix;
+			$parent_activity = $wpdb->get_var("select item_id from ".$table_prefix."bp_activity where id=\"$mentionid\"");
+			if($parent_activity==0){
+				$parent_activity = $mentionid;
+			}
+			$aParams = array();
+			$aParams ['display_comments'] = true;
+			$aParams['in'] = array($parent_activity);
+			//$aTempActivities = bp_activity_get($aParams);
+		}else{		
+			if (!bp_has_activities())
+				return $this->error('activity');
+			if ($this->pages !== 1) {
+				$aParams ['max'] = true;
+				$aParams ['per_page'] = $this->offset;
+				$iPages = $this->pages;
+			}
 
-        $aParams ['display_comments'] = $this->comments;
-        $aParams ['sort'] = $this->sort;		
-		
-        $aParams ['filter'] ['user_id'] = $this->userid;
-        $aParams ['filter'] ['object'] = $this->component;
-        $aParams ['filter'] ['type'] = $this->type;
-        $aParams ['filter'] ['primary_id'] = $this->itemid;
-        $aParams ['filter'] ['secondary_id'] = $this->secondaryitemid;
-        $iLimit = $this->limit;
-		
-		$page = $_GET['thepage'];
-		if(!$page){$page=1;}
-		$per_page = $_GET['per_page'];
-		if(!$per_page){$per_page=10;}
-		$count_total = $_GET['count_total'];
-		if(!$count_total){$count_total=100;}
-		
-		$aParams['page']=$page;
-		$aParams['per_page']=$per_page;
-		$aParams['count_total']=$count_total;
+			$aParams ['display_comments'] = $this->comments;
+			$aParams ['sort'] = $this->sort;		
+			
+			$aParams ['filter'] ['user_id'] = $this->userid;
+			$aParams ['filter'] ['object'] = $this->component;
+			$aParams ['filter'] ['type'] = $this->type;
+			$aParams ['filter'] ['primary_id'] = $this->itemid;
+			$aParams ['filter'] ['secondary_id'] = $this->secondaryitemid;
+			$iLimit = $this->limit;
+			
+			$page = $_GET['thepage'];
+			if(!$page){$page=1;}
+			$per_page = $_GET['per_page'];
+			if(!$per_page){$per_page=10;}
+			$count_total = $_GET['count_total'];
+			if(!$count_total){$count_total=100;}
+			
+			$aParams['page']=$page;
+			$aParams['per_page']=$per_page;
+			$aParams['count_total']=$count_total;
+		}
 		$aTempActivities = bp_activity_get($aParams);
 		
 		if (!empty($aTempActivities['activities'])) {
@@ -442,13 +455,12 @@ class JSON_API_BuddypressRead_Controller {
 						//preg_match_all('/(src)=("[^"]*")/i',$user->avatar_mini, $user_avatar_result);
 						//$oActivity->avatar_mini = str_replace('"','',$user_avatar_result[2][0]);
 					}
-					
 					$oReturn->activities[$acounter]->id = $oActivity->id;
 					$oReturn->activities[$acounter]->component = $oActivity->component;
                     $oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->id = $oActivity->user_id;
 					$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->username = $oActivity->user_login;
                     $oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->mail = $oActivity->user_email;
-                    $oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->display_name = $oActivity->display_name;
+                    $oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->display_name = $fullname;
 					$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->avatar_big = $oActivity->avatar_big;
 					$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->avatar_thumb = $oActivity->avatar_thumb;
                     $oReturn->activities[$acounter]->type = $oActivity->type;
@@ -550,12 +562,13 @@ class JSON_API_BuddypressRead_Controller {
 				/*echo '<pre>';
 				print_r($oActivity->children);
 				exit;*/
-				//echo '<pre>';print_r($oReturn->activities);echo '</pre>';
 				$oReturn->total_pages = ceil($aTempActivities['total']/$per_page);
 				$oReturn->total_count = $aTempActivities['total'];
             } else {
                 return $this->error('activity');
             }
+			
+			//echo '<pre>';print_r($oReturn);echo '</pre>';
             return $oReturn;
 	}
 	
