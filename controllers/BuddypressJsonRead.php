@@ -8,6 +8,91 @@ require_once BUDDYPRESS_JSON_API_HOME . '/library/functions.class.php';
 
 class JSON_API_BuddypressRead_Controller {
 
+	 public function members_get_members() 
+	 {
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->msg = '';
+		$oReturn->success = '';
+		$oReturn->error = '';
+		global $wpdb,$table_prefix;
+		
+		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}		
+		$maxlimit = $_POST['maxlimit'];
+		$page = $_POST['pages'];
+		$orderby = $_POST['sort'];
+		$keyword = trim($_POST['keyword']);
+		if($keyword==''){ $oReturn->error = __('Please enter keyword to search.','aheadzen'); return $oReturn;}
+				
+		if(!$page){$page=1;}
+		if(!$maxlimit){$maxlimit=20;}
+		if(!$orderby){$orderby='DESC';}
+		
+		$start = $maxlimit*($page-1);
+		$end = $maxlimit;
+		global $wpdb,$table_prefix;		
+		$subsql1 = " u.ID in (select um1.user_id from $wpdb->usermeta um1 where um1.meta_key='first_name' and um1.meta_value like \"$keyword%\")";
+		$subsql2 = " OR u.ID in (select um2.user_id from $wpdb->usermeta um2 where um2.meta_key='last_name' and um2.meta_value like \"$keyword%\")";
+		$subsql3 = " OR u.ID in (select um3.user_id from ".$table_prefix."bp_xprofile_data um3 where um3.value like \"$keyword%\")";
+		$subsql = ' AND ('.$subsql1.$subsql2.$subsql3.')';
+		//$total_count = $wpdb->get_var("SELECT count(DISTINCT u.ID) FROM ".$table_prefix."users u LEFT JOIN ".$table_prefix."bp_xprofile_data pd ON u.ID = pd.user_id WHERE u.user_status = 0 AND (pd.field_id = 1) $subsql");
+		//$oReturn->total_count = $total_count;
+		//$oReturn->total_pages = ceil($total_count/$maxlimit);
+		$sql = "SELECT DISTINCT u.ID, u.display_name FROM ".$table_prefix."users u LEFT JOIN ".$table_prefix."bp_xprofile_data pd ON u.ID = pd.user_id WHERE u.user_status = 0 AND (pd.field_id = 1) $subsql  order by u.display_name $orderby limit $start,$end";
+		$members = $wpdb->get_col($sql);
+		$counter=0;
+		if($members && count($members)>0){
+			for($m=0;$m<count($members);$m++){			
+				$user = new BP_Core_User($members[$m]);
+				if($user){
+					$username = $avatar_big = $avatar_thumb = '';
+					if($user->user_url){
+						$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
+					}
+					if($user->avatar){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+						$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+					}
+					if($user->avatar_thumb){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+					}					
+					$oReturn->members[$counter]->id 		= $user->id;
+					$oReturn->members[$counter]->username 	= $username;
+					$oReturn->members[$counter]->fullname 	= $user->fullname;
+					$oReturn->members[$counter]->email 		= $user->email;
+					$oReturn->members[$counter]->user_url 	= $user->user_url;
+					$oReturn->members[$counter]->last_active= $user->last_active;
+					$oReturn->members[$counter]->avatar_big = $avatar_big;
+					$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
+					
+					if (bp_has_profile(array('user_id' => $user->id))) {
+						while (bp_profile_groups(array('user_id' => $user->id))) {					
+							bp_the_profile_group();
+							if (bp_profile_group_has_fields()) {
+								$sGroupName = bp_get_the_profile_group_name();
+								
+								while (bp_profile_fields()) {
+									bp_the_profile_field();
+									$sFieldName = bp_get_the_profile_field_name();
+									if (bp_field_has_data()) {
+									   $sFieldValue = strip_tags(bp_get_the_profile_field_value());
+									}
+									$oReturn->members[$counter]->$sGroupName->$sFieldName = $sFieldValue;
+								}
+							}
+						}
+					}					
+					$counter++;
+				}			
+			}
+		}else{
+			$oReturn->error = __('No Members Available To Display.','aheadzen');
+		}
+		//print_r($oReturn);
+		return $oReturn;
+	 }
+	 
    /**
      * Returns an Array with all mentions
      * @param int pages: number of pages to display (default 1)
@@ -1203,8 +1288,8 @@ class JSON_API_BuddypressRead_Controller {
         $oReturn = new stdClass();
 
         $mGroupExists = $this->get_group_from_params();
-
-        if ($mGroupExists === false)
+		
+		if ($mGroupExists === false)
             return $this->error('base', 0);
         else if (is_int($mGroupExists) && $mGroupExists !== true)
             return $this->error('groups', $mGroupExists);
