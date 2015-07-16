@@ -7,7 +7,126 @@
 require_once BUDDYPRESS_JSON_API_HOME . '/library/functions.class.php';
 
 class JSON_API_BuddypressRead_Controller {
-
+	public function members_get_members_new() 
+	 {
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->msg = '';
+		$oReturn->success = '';
+		$oReturn->error = '';
+		global $wpdb,$table_prefix;
+		
+		$_POST['keyword'] = 'a pune';
+		
+		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}		
+		$maxlimit = $_POST['maxlimit'];
+		$page = $_POST['pages'];
+		$orderby = $_POST['sort'];
+		$keyword = trim($_POST['keyword']);
+		if($keyword==''){ $oReturn->error = __('Please enter keyword to search.','aheadzen'); return $oReturn;}
+		
+		if(!$page){$page=1;}
+		if(!$maxlimit){$maxlimit=20;}
+		if(!$orderby){$orderby='DESC';}
+		
+		$start = $maxlimit*($page-1);
+		$end = $maxlimit;
+		global $wpdb,$table_prefix;		
+		
+		$keyword_arr = explode(' ',$keyword);
+		if(count($keyword_arr)>1){
+			$subsql2_and_or = $subsql3_and_or = 'OR';
+			$subsql1_like = $subsql2_like = $subsql3_like = '';
+			$subsql1_like_arr = $subsql2_like_arr = $subsql3_like_arr = array();
+			for($i=0;$i<count($keyword_arr);$i++)
+			{
+				$subsql1_like_arr[] = "(um1.meta_value like \"$keyword_arr[$i]%\")";
+				$subsql2_like_arr[] = "(um2.meta_value like \"$keyword_arr[$i]%\")";
+				$subsql3_like_arr[] = "(um3.value like \"$keyword_arr[$i]%\")";
+			}
+			$subsql1_like = implode(' OR ',$subsql1_like_arr);
+			$subsql2_like = implode(' OR ',$subsql2_like_arr);
+			$subsql3_like = implode(' OR ',$subsql3_like_arr);
+			$subsql1_like = 'and ('.$subsql1_like.')';
+			$subsql2_like = 'and ('.$subsql2_like.')';
+			$subsql3_like = '('.$subsql3_like.')';
+			$subsql2_and_or = 'OR';
+			$subsql3_and_or = 'AND';
+			
+			$subsql1 = "(select um1.user_id from $wpdb->usermeta um1 where um1.meta_key='first_name' $subsql1_like)";
+			$subsql2 = "(select um2.user_id from $wpdb->usermeta um2 where um2.meta_key='last_name' $subsql2_like)";
+			$subarr1 = $wpdb->get_col($subsql12 = $subsql1.' union '.$subsql2);			
+			$subsql3 = "select distinct(um3.user_id) from ".$table_prefix."bp_xprofile_data um3 where  $subsql3_like";
+			$subarr2 = $wpdb->get_col($subsql3);
+			$subarr = array_intersect($subarr1,$subarr2);
+			print_r($subarr2);
+			
+		}else{
+			$subsql1 = " u.ID in (select um1.user_id from $wpdb->usermeta um1 where um1.meta_key='first_name' and um1.meta_value like \"$keyword%\")";
+			$subsql2 = " OR u.ID in (select um2.user_id from $wpdb->usermeta um2 where um2.meta_key='last_name' and um2.meta_value like \"$keyword%\")";
+			$subsql3 = " $and_or u.ID in (select um3.user_id from ".$table_prefix."bp_xprofile_data um3 where um3.value like \"$keyword%\")";
+		}
+		
+		/*$subsql1 = " u.ID in (select um1.user_id from $wpdb->usermeta um1 where um1.meta_key='first_name' and um1.meta_value like \"$keyword%\")";
+		$subsql2 = " OR u.ID in (select um2.user_id from $wpdb->usermeta um2 where um2.meta_key='last_name' and um2.meta_value like \"$keyword%\")";
+		$subsql3 = " $and_or u.ID in (select um3.user_id from ".$table_prefix."bp_xprofile_data um3 where um3.value like \"$keyword%\")";
+		*/
+		$subsql = ' AND ('.$subsql1.$subsql2.$subsql3.')';
+		echo $sql = "SELECT DISTINCT u.ID, u.display_name FROM ".$table_prefix."users u LEFT JOIN ".$table_prefix."bp_xprofile_data pd ON u.ID = pd.user_id WHERE u.user_status = 0 AND (pd.field_id = 1) $subsql  order by u.display_name $orderby limit $start,$end";
+		$members = $wpdb->get_col($sql);
+		$counter=0;
+		if($members && count($members)>0){
+			for($m=0;$m<count($members);$m++){			
+				$user = new BP_Core_User($members[$m]);
+				if($user){
+					$username = $avatar_big = $avatar_thumb = '';
+					if($user->user_url){
+						$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
+					}
+					if($user->avatar){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+						$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+					}
+					if($user->avatar_thumb){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+					}					
+					$oReturn->members[$counter]->id 		= $user->id;
+					$oReturn->members[$counter]->username 	= $username;
+					$oReturn->members[$counter]->fullname 	= $user->fullname;
+					$oReturn->members[$counter]->email 		= $user->email;
+					$oReturn->members[$counter]->user_url 	= $user->user_url;
+					$oReturn->members[$counter]->last_active= $user->last_active;
+					$oReturn->members[$counter]->avatar_big = $avatar_big;
+					$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
+					
+					if (bp_has_profile(array('user_id' => $user->id))) {
+						while (bp_profile_groups(array('user_id' => $user->id))) {					
+							bp_the_profile_group();
+							if (bp_profile_group_has_fields()) {
+								$sGroupName = bp_get_the_profile_group_name();
+								
+								while (bp_profile_fields()) {
+									bp_the_profile_field();
+									$sFieldName = bp_get_the_profile_field_name();
+									if (bp_field_has_data()) {
+									   $sFieldValue = strip_tags(bp_get_the_profile_field_value());
+									}
+									$oReturn->members[$counter]->$sGroupName->$sFieldName = $sFieldValue;
+								}
+							}
+						}
+					}					
+					$counter++;
+				}			
+			}
+		}else{
+			$oReturn->error = __('No Members Available To Display.','aheadzen');
+		}
+		//print_r($oReturn);
+		return $oReturn;
+	 }
+	 
 	 public function members_get_members() 
 	 {
 		header("Access-Control-Allow-Origin: *");
@@ -17,13 +136,15 @@ class JSON_API_BuddypressRead_Controller {
 		$oReturn->error = '';
 		global $wpdb,$table_prefix;
 		
+		$_POST['keyword'] = 'a pune';
+		
 		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}		
 		$maxlimit = $_POST['maxlimit'];
 		$page = $_POST['pages'];
 		$orderby = $_POST['sort'];
 		$keyword = trim($_POST['keyword']);
 		if($keyword==''){ $oReturn->error = __('Please enter keyword to search.','aheadzen'); return $oReturn;}
-				
+		
 		if(!$page){$page=1;}
 		if(!$maxlimit){$maxlimit=20;}
 		if(!$orderby){$orderby='DESC';}
@@ -31,13 +152,39 @@ class JSON_API_BuddypressRead_Controller {
 		$start = $maxlimit*($page-1);
 		$end = $maxlimit;
 		global $wpdb,$table_prefix;		
-		$subsql1 = " u.ID in (select um1.user_id from $wpdb->usermeta um1 where um1.meta_key='first_name' and um1.meta_value like \"$keyword%\")";
+		$subsql2_and_or = $subsql3_and_or = 'OR';
+		$subsql1_like = "and um1.meta_value like \"$keyword%\"";
+		$subsql2_like = "and um2.meta_value like \"$keyword%\"";
+		$subsql3_like = "um3.value like \"$keyword%\"";
+		$keyword_arr = explode(' ',$keyword);
+		if(count($keyword_arr)>1){
+			$subsql1_like = $subsql2_like = $subsql3_like = '';
+			$subsql1_like_arr = $subsql2_like_arr = $subsql3_like_arr = array();
+			for($i=0;$i<count($keyword_arr);$i++)
+			{
+				$subsql1_like_arr[] = "(um1.meta_value like \"$keyword_arr[$i]%\")";
+				$subsql2_like_arr[] = "(um2.meta_value like \"$keyword_arr[$i]%\")";
+				$subsql3_like_arr[] = "(um3.value like \"%$keyword_arr[$i]%\")";
+			}
+			$subsql1_like = implode(' OR ',$subsql1_like_arr);
+			$subsql2_like = implode(' OR ',$subsql2_like_arr);
+			$subsql3_like = implode(' OR ',$subsql3_like_arr);
+			$subsql1_like = 'and ('.$subsql1_like.')';
+			$subsql2_like = 'and ('.$subsql2_like.')';
+			$subsql3_like = '('.$subsql3_like.')';
+			$subsql2_and_or = 'OR';
+			$subsql3_and_or = 'AND';
+		}
+		
+		$subsql1 = " (u.ID in (select um1.user_id from $wpdb->usermeta um1 where um1.meta_key='first_name' $subsql1_like)";
+		$subsql2 = " $subsql2_and_or u.ID in (select um2.user_id from $wpdb->usermeta um2 where um2.meta_key='last_name' $subsql2_like))";
+		$subsql3 = " $subsql3_and_or u.ID in (select um3.user_id from ".$table_prefix."bp_xprofile_data um3 where  $subsql3_like)";
+		
+		/*$subsql1 = " u.ID in (select um1.user_id from $wpdb->usermeta um1 where um1.meta_key='first_name' and um1.meta_value like \"$keyword%\")";
 		$subsql2 = " OR u.ID in (select um2.user_id from $wpdb->usermeta um2 where um2.meta_key='last_name' and um2.meta_value like \"$keyword%\")";
-		$subsql3 = " OR u.ID in (select um3.user_id from ".$table_prefix."bp_xprofile_data um3 where um3.value like \"$keyword%\")";
+		$subsql3 = " $and_or u.ID in (select um3.user_id from ".$table_prefix."bp_xprofile_data um3 where um3.value like \"$keyword%\")";
+		*/
 		$subsql = ' AND ('.$subsql1.$subsql2.$subsql3.')';
-		//$total_count = $wpdb->get_var("SELECT count(DISTINCT u.ID) FROM ".$table_prefix."users u LEFT JOIN ".$table_prefix."bp_xprofile_data pd ON u.ID = pd.user_id WHERE u.user_status = 0 AND (pd.field_id = 1) $subsql");
-		//$oReturn->total_count = $total_count;
-		//$oReturn->total_pages = ceil($total_count/$maxlimit);
 		$sql = "SELECT DISTINCT u.ID, u.display_name FROM ".$table_prefix."users u LEFT JOIN ".$table_prefix."bp_xprofile_data pd ON u.ID = pd.user_id WHERE u.user_status = 0 AND (pd.field_id = 1) $subsql  order by u.display_name $orderby limit $start,$end";
 		$members = $wpdb->get_col($sql);
 		$counter=0;
