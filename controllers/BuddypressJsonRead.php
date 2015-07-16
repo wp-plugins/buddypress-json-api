@@ -16,10 +16,10 @@ class JSON_API_BuddypressRead_Controller {
 		$oReturn->error = '';
 		global $wpdb,$table_prefix;
 		
-		$maxlimit = $GET['maxlimit'];
-		$page = $GET['pages'];
-		$orderby = $GET['sort'];
-		$keyword = trim($GET['keyword']);
+		$maxlimit = $_GET['maxlimit'];
+		$page = $_GET['pages'];
+		$orderby = $_GET['sort'];
+		$keyword = trim($_GET['keyword']);
 		if($keyword==''){ $oReturn->error = __('Please enter keyword to search.','aheadzen'); return $oReturn;}
 		
 		if(!$page){$page=1;}
