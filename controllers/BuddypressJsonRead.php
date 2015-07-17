@@ -9,111 +9,55 @@ require_once BUDDYPRESS_JSON_API_HOME . '/library/functions.class.php';
 class JSON_API_BuddypressRead_Controller {
 	 public function members_get_members() 
 	 {
-		//header("Access-Control-Allow-Origin: *");
+		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
 		$oReturn->msg = '';
 		$oReturn->success = '';
 		$oReturn->error = '';
+		$oReturn->total = 0;
+		$bp_members = array();
+		$member_data = array();
 		global $wpdb,$table_prefix;
 		
-		$maxlimit = $_GET['maxlimit'];
-		$page = $_GET['pages'];
-		$orderby = $_GET['sort'];
 		$keyword = trim($_GET['keyword']);
 		if($keyword==''){ $oReturn->error = __('Please enter keyword to search.','aheadzen'); return $oReturn;}
 		
-		if(!$page){$page=1;}
-		if(!$maxlimit){$maxlimit=20;}
-		if(!$orderby){$orderby='DESC';}
-		
-		$start = $maxlimit*($page-1);
-		$end = $maxlimit;
-		global $wpdb,$table_prefix;		
-		$subsql2_and_or = $subsql3_and_or = 'OR';
-		$subsql1_like = "and um1.meta_value like \"$keyword%\"";
-		$subsql2_like = "and um2.meta_value like \"$keyword%\"";
-		$subsql3_like = "um3.value like \"$keyword%\"";
-		$keyword_arr = explode(' ',$keyword);
-		if(count($keyword_arr)>1){
-			$subsql1_like = $subsql2_like = $subsql3_like = '';
-			$subsql1_like_arr = $subsql2_like_arr = $subsql3_like_arr = array();
-			for($i=0;$i<count($keyword_arr);$i++)
-			{
-				$subsql1_like_arr[] = "(um1.meta_value like \"$keyword_arr[$i]%\")";
-				$subsql2_like_arr[] = "(um2.meta_value like \"$keyword_arr[$i]%\")";
-				$subsql3_like_arr[] = "(um3.value like \"%$keyword_arr[$i]%\")";
-			}
-			$subsql1_like = implode(' OR ',$subsql1_like_arr);
-			$subsql2_like = implode(' OR ',$subsql2_like_arr);
-			$subsql3_like = implode(' OR ',$subsql3_like_arr);
-			$subsql1_like = 'and ('.$subsql1_like.')';
-			$subsql2_like = 'and ('.$subsql2_like.')';
-			$subsql3_like = '('.$subsql3_like.')';
-			$subsql2_and_or = 'OR';
-			$subsql3_and_or = 'AND';
-		}
-		
-		$subsql1 = " (u.ID in (select um1.user_id from $wpdb->usermeta um1 where um1.meta_key='first_name' $subsql1_like)";
-		$subsql2 = " $subsql2_and_or u.ID in (select um2.user_id from $wpdb->usermeta um2 where um2.meta_key='last_name' $subsql2_like))";
-		$subsql3 = " $subsql3_and_or u.ID in (select um3.user_id from ".$table_prefix."bp_xprofile_data um3 where  $subsql3_like)";
-		
-		/*$subsql1 = " u.ID in (select um1.user_id from $wpdb->usermeta um1 where um1.meta_key='first_name' and um1.meta_value like \"$keyword%\")";
-		$subsql2 = " OR u.ID in (select um2.user_id from $wpdb->usermeta um2 where um2.meta_key='last_name' and um2.meta_value like \"$keyword%\")";
-		$subsql3 = " $and_or u.ID in (select um3.user_id from ".$table_prefix."bp_xprofile_data um3 where um3.value like \"$keyword%\")";
-		*/
-		$subsql = ' AND ('.$subsql1.$subsql2.$subsql3.')';
-		$sql = "SELECT DISTINCT u.ID, u.display_name FROM ".$table_prefix."users u LEFT JOIN ".$table_prefix."bp_xprofile_data pd ON u.ID = pd.user_id WHERE u.user_status = 0 AND (pd.field_id = 1) $subsql  order by u.display_name $orderby limit $start,$end";
+		$sql = "select DISTINCT(user_id) from ".$table_prefix."bp_xprofile_data where MATCH (value) AGAINST('".$keyword."*' IN BOOLEAN MODE) limit 10";
 		$members = $wpdb->get_col($sql);
-		$counter=0;
-		if($members && count($members)>0){
-			for($m=0;$m<count($members);$m++){			
-				$user = new BP_Core_User($members[$m]);
-				if($user){
-					$username = $avatar_big = $avatar_thumb = '';
-					if($user->user_url){
-						$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
+		if($members){
+			$members_basic = bp_core_get_users(array('include'=>$members));			
+			if($members_basic){
+				$users = $members_basic['users'];
+				$oReturn->total = $members_basic['total'];
+				for($i=0;$i<count($users);$i++){
+					$uid = $users[$i]->ID;
+					$bp_members[] = $uid;
+					$oReturn->members[$uid]->user_login = $users[$i]->user_login;
+					$oReturn->members[$uid]->fullname = $users[$i]->fullname;
+					$oReturn->members[$uid]->user_email = $users[$i]->user_email;
+					$oReturn->members[$uid]->user_nicename = $users[$i]->user_nicename;
+					$oReturn->members[$uid]->user_registered = $users[$i]->user_registered;
+					$oReturn->members[$uid]->last_activity = $users[$i]->last_activity;
+					$avatar = bp_core_fetch_avatar( array( 'item_id' => $uid, 'type' => 'full') );
+					if($avatar){
+						preg_match_all('/(src)=("[^"]*")/i',$avatar, $user_avatar_result);
+						$oReturn->members[$uid]->avatar = str_replace('"','',$user_avatar_result[2][0]);
 					}
-					if($user->avatar){
-						preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
-						$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+				}
+				
+				$members_str = implode(',',$bp_members);
+				$res = $wpdb->get_results("select value,user_id,field_id from ".$table_prefix."bp_xprofile_data where user_id in ($members_str) order by user_id asc");
+				if($res){
+					foreach($res as $resobj){
+						$var = $resobj->field_id;
+						$oReturn->members[$resobj->user_id]->profile->$var = $resobj->value;
 					}
-					if($user->avatar_thumb){
-						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
-						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
-					}					
-					$oReturn->members[$counter]->id 		= $user->id;
-					$oReturn->members[$counter]->username 	= $username;
-					$oReturn->members[$counter]->fullname 	= $user->fullname;
-					$oReturn->members[$counter]->email 		= $user->email;
-					$oReturn->members[$counter]->user_url 	= $user->user_url;
-					$oReturn->members[$counter]->last_active= $user->last_active;
-					$oReturn->members[$counter]->avatar_big = $avatar_big;
-					$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
-					
-					if (bp_has_profile(array('user_id' => $user->id))) {
-						while (bp_profile_groups(array('user_id' => $user->id))) {					
-							bp_the_profile_group();
-							if (bp_profile_group_has_fields()) {
-								$sGroupName = bp_get_the_profile_group_name();
-								
-								while (bp_profile_fields()) {
-									bp_the_profile_field();
-									$sFieldName = bp_get_the_profile_field_name();
-									if (bp_field_has_data()) {
-									   $sFieldValue = strip_tags(bp_get_the_profile_field_value());
-									}
-									$oReturn->members[$counter]->$sGroupName->$sFieldName = $sFieldValue;
-								}
-							}
-						}
-					}					
-					$counter++;
-				}			
+				}
 			}
-		}else{
-			$oReturn->error = __('No Members Available To Display.','aheadzen');
 		}
-		//print_r($oReturn);
+		if(count($bp_members)==0){$oReturn->error = __('No Members Available To Display.','aheadzen');}
+		
+		//echo '<pre>';print_r($oReturn);exit;
 		return $oReturn;
 	 }
 	 
