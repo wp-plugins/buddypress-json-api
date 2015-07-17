@@ -63,7 +63,7 @@ class JSON_API_BuddypressRead_Controller {
 					$counter++;
 				}
 			}			
-			
+			$oReturn->total = $counter;
 		}else{$oReturn->error = __('No Members Available To Display.','aheadzen');}
 		
 		//echo '<pre>';print_r($oReturn);exit;
