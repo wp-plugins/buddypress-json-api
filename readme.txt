@@ -288,3 +288,8 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 =1.0.18 =
 
 * Member api "members_get_members" searching member update.
+
+
+=1.0.19 =
+
+* Member api "members_get_members" searching member update.

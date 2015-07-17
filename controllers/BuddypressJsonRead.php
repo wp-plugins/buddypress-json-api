@@ -25,37 +25,46 @@ class JSON_API_BuddypressRead_Controller {
 		$sql = "select DISTINCT(user_id) from ".$table_prefix."bp_xprofile_data where MATCH (value) AGAINST('".$keyword."*' IN BOOLEAN MODE) limit 10";
 		$members = $wpdb->get_col($sql);
 		if($members){
-			$members_basic = bp_core_get_users(array('include'=>$members));			
-			if($members_basic){
-				$users = $members_basic['users'];
-				$oReturn->total = $members_basic['total'];
-				for($i=0;$i<count($users);$i++){
-					$uid = $users[$i]->ID;
-					$bp_members[] = $uid;
-					$oReturn->members[$uid]->user_login = $users[$i]->user_login;
-					$oReturn->members[$uid]->fullname = $users[$i]->fullname;
-					$oReturn->members[$uid]->user_email = $users[$i]->user_email;
-					$oReturn->members[$uid]->user_nicename = $users[$i]->user_nicename;
-					$oReturn->members[$uid]->user_registered = $users[$i]->user_registered;
-					$oReturn->members[$uid]->last_activity = $users[$i]->last_activity;
-					$avatar = bp_core_fetch_avatar( array( 'item_id' => $uid, 'type' => 'full') );
-					if($avatar){
-						preg_match_all('/(src)=("[^"]*")/i',$avatar, $user_avatar_result);
-						$oReturn->members[$uid]->avatar = str_replace('"','',$user_avatar_result[2][0]);
-					}
-				}
+			$counter = 0;
+			for($m=0;$m<count($members);$m++){
+				$uid = $members[$m];
+				$user = new BP_Core_User($uid);
 				
-				$members_str = implode(',',$bp_members);
-				$res = $wpdb->get_results("select value,user_id,field_id from ".$table_prefix."bp_xprofile_data where user_id in ($members_str) order by user_id asc");
-				if($res){
-					foreach($res as $resobj){
-						$var = $resobj->field_id;
-						$oReturn->members[$resobj->user_id]->profile->$var = $resobj->value;
+				if($user){
+					$username = $avatar_big = $avatar_thumb = '';
+					if($user->user_url){
+						$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
 					}
+					if($user->avatar){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+						$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+					}
+					if($user->avatar_thumb){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+					}					
+					$oReturn->members[$counter]->id 		= $user->id;
+					$oReturn->members[$counter]->username 	= $username;
+					$oReturn->members[$counter]->fullname 	= $user->fullname;
+					$oReturn->members[$counter]->email 		= $user->email;
+					$oReturn->members[$counter]->user_url 	= $user->user_url;
+					$oReturn->members[$counter]->last_active= $user->last_active;
+					$oReturn->members[$counter]->avatar_big = $avatar_big;
+					$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
+					
+					$profile_data = $user->profile_data;
+					if($profile_data){
+						foreach($profile_data as $sFieldName => $val){
+							if(is_array($val)){
+								$oReturn->members[$counter]->$sFieldName = $val['field_data'];
+							}
+						}
+					}
+					$counter++;
 				}
-			}
-		}
-		if(count($bp_members)==0){$oReturn->error = __('No Members Available To Display.','aheadzen');}
+			}			
+			
+		}else{$oReturn->error = __('No Members Available To Display.','aheadzen');}
 		
 		//echo '<pre>';print_r($oReturn);exit;
 		return $oReturn;
