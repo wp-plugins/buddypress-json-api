@@ -63,7 +63,7 @@ class JSON_API_BuddypressRead_Controller {
 					$counter++;
 				}
 			}			
-			$oReturn->total = $counter;
+			
 		}else{$oReturn->error = __('No Members Available To Display.','aheadzen');}
 		
 		//echo '<pre>';print_r($oReturn);exit;
@@ -572,17 +572,16 @@ class JSON_API_BuddypressRead_Controller {
 							/*children*/
 							$counter=0;
 							foreach($oActivity->children as $childoActivity){
-							if($user && $user->avatar){
-								if($user->avatar){
-									preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+							$childuser = new BP_Core_User($childoActivity->user_id);
+							if($childuser && $childuser->avatar){
+								if($childuser->avatar){
+									preg_match_all('/(src)=("[^"]*")/i',$childuser->avatar, $user_avatar_result);
 									$childoActivity->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
 								}
-								if($user->avatar_thumb){
-									preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+								if($childuser->avatar_thumb){
+									preg_match_all('/(src)=("[^"]*")/i',$childuser->avatar_thumb, $user_avatar_result);
 									$childoActivity->avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
 								}
-								//preg_match_all('/(src)=("[^"]*")/i',$user->avatar_mini, $user_avatar_result);
-								//$oActivity->avatar_mini = str_replace('"','',$user_avatar_result[2][0]);
 							}
 							$oReturn->activities[$acounter]->children->$counter->id = $childoActivity->id;
 							$oReturn->activities[$acounter]->children->$counter->item_id = $childoActivity->item_id;
@@ -633,9 +632,7 @@ class JSON_API_BuddypressRead_Controller {
 					}
 				}
 				
-				/*echo '<pre>';
-				print_r($oActivity->children);
-				exit;*/
+				//echo '<pre>';print_r($oReturn);exit;
 				$oReturn->total_pages = ceil($aTempActivities['total']/$per_page);
 				$oReturn->total_count = $aTempActivities['total'];
             } else {
