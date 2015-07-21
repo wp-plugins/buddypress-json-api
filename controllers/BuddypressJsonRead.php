@@ -448,7 +448,7 @@ class JSON_API_BuddypressRead_Controller {
 		$oReturn->success = '';
         $this->init('activity', 'see_activity');
 		
-		
+		global $table_prefix,$wpdb;
 		if(!$this->userid && $_GET['username']){
 			$oUser = get_user_by('login', $_GET['username']);
 			if($oUser){$this->userid = $oUser->data->ID;}
@@ -532,10 +532,12 @@ class JSON_API_BuddypressRead_Controller {
 						$oReturn->activities[$acounter]->time = $oActivity->date_recorded;
 						
 						if($oActivity->type=='new_avatar'){
-							$oActivity->action = '<a href="'.$oActivity->primary_link.'">'.$oActivity->user_fullname.'</a> changed their profile picture. <br /><img src="'.$oActivity->avatar_thumb.'" alt="" />';
+							//$oActivity->action = '<a href="'.$oActivity->primary_link.'">'.$oActivity->user_fullname.'</a> changed their profile picture. <br /><img src="'.$oActivity->avatar_thumb.'" alt="" />';
+							$oActivity->action = 'Changed their profile picture. <br /><img src="'.$oActivity->avatar_thumb.'" alt="" />';
 						}else if($oActivity->type=='updated_profile'){
 							if($oActivity->action=='' && $oActivity->content==''){
-								$oActivity->action = '<a href="'.$oActivity->primary_link.'">'.$oActivity->user_fullname.'</a> changed their profile picture';
+								//$oActivity->action = '<a href="'.$oActivity->primary_link.'">'.$oActivity->user_fullname.'</a> changed their profile';
+								$oActivity->action = 'Changed their profile';
 							}										
 						}
 						$oReturn->activities[$acounter]->action = $oActivity->action;
@@ -545,6 +547,7 @@ class JSON_API_BuddypressRead_Controller {
 						
 						$total_votes = $total_up = $total_down = 0;
 						$uplink = $downlink = '#';
+						$voteed_action = 'up';
 						if(class_exists('VoterPluginClass'))
 						{
 							$arg = array(
@@ -560,6 +563,16 @@ class JSON_API_BuddypressRead_Controller {
 							$total_down = $votes->total_down;
 							$uplink = $votes->post_voter_links->up;
 							$downlink = $votes->post_voter_links->down;
+							
+							if($user_id){
+								$user_id = $oActivity->user_id;
+								$secondary_item_id = $oActivity->id;
+								$type = 'activity';
+								$item_id = 0;
+								$component = 'buddypress';
+								$voteed_action = $wpdb->get_var("SELECT action FROM `".$table_prefix."ask_votes` WHERE user_id=\"$user_id\" AND item_id=\"$item_id\" AND component=\"$component\" AND type=\"$type\" AND secondary_item_id=\"$secondary_item_id\"");
+								if(!$voteed_action){$voteed_action='up';}
+							}
 						}
 						
 						$oReturn->activities[$acounter]->vote->total_votes = $total_votes;
@@ -567,6 +580,8 @@ class JSON_API_BuddypressRead_Controller {
 						$oReturn->activities[$acounter]->vote->total_down = $total_down;
 						$oReturn->activities[$acounter]->vote->uplink = $uplink;
 						$oReturn->activities[$acounter]->vote->downlink = $downlink;
+						$oReturn->activities[$acounter]->vote->action = $voteed_action;
+						
 					
 						if($oActivity->children){
 							/*children*/
@@ -602,20 +617,34 @@ class JSON_API_BuddypressRead_Controller {
 							
 							$total_votes = $total_up = $total_down = 0;
 							$uplink = $downlink = '#';
+							$voteed_action = 'up';
 							if(class_exists('VoterPluginClass'))
 							{
 								$arg = array(
-									'item_id'=>$childoActivity->id,
+									'item_id'=>0,
+									'secondary_item_id'=>$childoActivity->id,
 									'user_id'=>$childoActivity->user_id,
-									'type'=>$childoActivity->type,
+									'type'=>'activity',
+									'component'=>'buddypress',
 									);					
 								$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
 								$votes = json_decode($votes_str);
+								
 								$total_votes = $votes->total_votes;
 								$total_up = $votes->total_up;
 								$total_down = $votes->total_down;
 								$uplink = $votes->post_voter_links->up;
 								$downlink = $votes->post_voter_links->down;
+								
+								if($user_id){
+									$user_id = $childoActivity->user_id;
+									$secondary_item_id = $childoActivity->id;
+									$type = $childoActivity->type;
+									$item_id = 0;
+									$component = 'buddypress';
+									$voteed_action = $wpdb->get_var("SELECT action FROM `".$table_prefix."ask_votes` WHERE user_id=\"$user_id\" AND item_id=\"$item_id\" AND component=\"$component\" AND type=\"$type\" AND secondary_item_id=\"$secondary_item_id\"");
+									if(!$voteed_action){$voteed_action='up';}
+								}
 							}
 							
 							$oReturn->activities[$acounter]->children->$counter->vote->total_votes = $total_votes;
@@ -623,7 +652,8 @@ class JSON_API_BuddypressRead_Controller {
 							$oReturn->activities[$acounter]->children->$counter->vote->total_down = $total_down;
 							$oReturn->activities[$acounter]->children->$counter->vote->uplink = $uplink;
 							$oReturn->activities[$acounter]->children->$counter->vote->downlink = $downlink;
-						
+							$oReturn->activities[$acounter]->children->$counter->vote->action = $voteed_action;
+							
 							$counter++;
 							}
 							
