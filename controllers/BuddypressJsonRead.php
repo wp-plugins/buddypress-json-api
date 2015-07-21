@@ -557,13 +557,14 @@ class JSON_API_BuddypressRead_Controller {
 								);
 							
 							$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
+							if($votes_str){
 							$votes = json_decode($votes_str);
 							$total_votes = $votes->total_votes;
 							$total_up = $votes->total_up;
 							$total_down = $votes->total_down;
 							$uplink = $votes->post_voter_links->up;
 							$downlink = $votes->post_voter_links->down;
-							
+							}
 							if($user_id){
 								$user_id = $oActivity->user_id;
 								$secondary_item_id = $oActivity->id;
@@ -621,11 +622,10 @@ class JSON_API_BuddypressRead_Controller {
 							if(class_exists('VoterPluginClass'))
 							{
 								$arg = array(
-									'item_id'=>0,
-									'secondary_item_id'=>$childoActivity->id,
+									'item_id'=>$childoActivity->id,
 									'user_id'=>$childoActivity->user_id,
 									'type'=>'activity',
-									'component'=>'buddypress',
+									//'component'=>'buddypress',
 									);					
 								$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
 								$votes = json_decode($votes_str);

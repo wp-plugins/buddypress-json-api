@@ -299,6 +299,10 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 
 * Activity listing -- child activity avatar was wrong - SOLVED.
 
-=1.0.20 =
+=1.0.21 =
 
 * Activity listing -- voting details added.
+
+=1.0.22 =
+
+* Activity listing -- voting total up & down default added to zero.
