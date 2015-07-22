@@ -618,7 +618,7 @@ class JSON_API_BuddypressRead_Controller {
 							
 							$total_votes = $total_up = $total_down = 0;
 							$uplink = $downlink = '#';
-							$voteed_action = 'up';
+							$voteed_action = '';
 							if(class_exists('VoterPluginClass'))
 							{
 								$arg = array(
@@ -643,7 +643,6 @@ class JSON_API_BuddypressRead_Controller {
 									$item_id = 0;
 									$component = 'buddypress';
 									$voteed_action = $wpdb->get_var("SELECT action FROM `".$table_prefix."ask_votes` WHERE user_id=\"$user_id\" AND item_id=\"$item_id\" AND component=\"$component\" AND type=\"$type\" AND secondary_item_id=\"$secondary_item_id\"");
-									if(!$voteed_action){$voteed_action='up';}
 								}
 							}
 							
