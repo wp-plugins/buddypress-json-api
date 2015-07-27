@@ -310,3 +310,7 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 =1.0.23 =
 
 * Activity listing -- voting total up & down value problem solved.
+
+=1.0.24 =
+
+* Plugin added "Access-Control-Allow" header for cross domain error solve.

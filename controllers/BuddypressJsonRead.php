@@ -7,7 +7,12 @@
 require_once BUDDYPRESS_JSON_API_HOME . '/library/functions.class.php';
 
 class JSON_API_BuddypressRead_Controller {
-	 public function members_get_members() 
+
+	function __construct() {
+	   header("Access-Control-Allow-Origin: *");
+	}
+   
+	public function members_get_members() 
 	 {
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
@@ -85,12 +90,12 @@ class JSON_API_BuddypressRead_Controller {
 		$oReturn->success = '';
 		$oReturn->error = '';
 		
-		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_GET['username']){$oReturn->error = __('Missing parameter username.','aheadzen'); return $oReturn;}
 		
-		$username = $_POST['username'];
-		$maxlimit = $_POST['maxlimit'];
-		$page = $_POST['pages'];
-		$orderby = $_POST['sort'];
+		$username = $_GET['username'];
+		$maxlimit = $_GET['maxlimit'];
+		$page = $_GET['pages'];
+		$orderby = $_GET['sort'];
 		
 		if(!$page){$page=1;}
 		if(!$maxlimit){$maxlimit=20;}
@@ -444,6 +449,7 @@ class JSON_API_BuddypressRead_Controller {
      * @return array activities: an array containing the activities
      */
 	 public function activity_get_activities() {
+		header("Access-Control-Allow-Origin: *");
         $oReturn = new stdClass();
 		$oReturn->success = '';
         $this->init('activity', 'see_activity');
@@ -900,6 +906,7 @@ class JSON_API_BuddypressRead_Controller {
 		 * @return array profilefields: an array containing the profilefields
 		 */
 		public function profile_get_profile() {
+			header("Access-Control-Allow-Origin: *");
 			$this->userid = $_GET['userid'];
 			$this->username = $_GET['username'];
 			$this->init('xprofile');
