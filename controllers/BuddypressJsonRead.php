@@ -188,13 +188,13 @@ class JSON_API_BuddypressRead_Controller {
      */
 	public function activity_comments_add_edit()
 	{		
+		header("Access-Control-Allow-Origin: *");
 		/*//The data only for testing purpose.
 		$_POST['content'] = '123 HELLO THIS IS TEST ACTIVITY Comments FOR ME';
 		$_POST['userid'] = 1;
 		$_POST['activityid'] = 47;
 		*/		
 		$error = '';
-		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
 		$oReturn->success = '';
 		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
@@ -571,14 +571,13 @@ class JSON_API_BuddypressRead_Controller {
 							$uplink = $votes->post_voter_links->up;
 							$downlink = $votes->post_voter_links->down;
 							}
-							if($user_id){
+							if($_GET['userid']){
 								$user_id = $oActivity->user_id;
 								$secondary_item_id = $oActivity->id;
 								$type = 'activity';
 								$item_id = 0;
 								$component = 'buddypress';
 								$voteed_action = $wpdb->get_var("SELECT action FROM `".$table_prefix."ask_votes` WHERE user_id=\"$user_id\" AND item_id=\"$item_id\" AND component=\"$component\" AND type=\"$type\" AND secondary_item_id=\"$secondary_item_id\"");
-								if(!$voteed_action){$voteed_action='up';}
 							}
 						}
 						
@@ -642,13 +641,14 @@ class JSON_API_BuddypressRead_Controller {
 								$uplink = $votes->post_voter_links->up;
 								$downlink = $votes->post_voter_links->down;
 								
-								if($user_id){
+								if($_GET['userid']){
 									$user_id = $childoActivity->user_id;
 									$secondary_item_id = $childoActivity->id;
 									$type = $childoActivity->type;
 									$item_id = 0;
 									$component = 'buddypress';
 									$voteed_action = $wpdb->get_var("SELECT action FROM `".$table_prefix."ask_votes` WHERE user_id=\"$user_id\" AND item_id=\"$item_id\" AND component=\"$component\" AND type=\"$type\" AND secondary_item_id=\"$secondary_item_id\"");
+									
 								}
 							}
 							

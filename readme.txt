@@ -314,3 +314,8 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 =1.0.24 =
 
 * Plugin added "Access-Control-Allow" header for cross domain error solve.
+
+
+=1.0.25 =
+
+* Plugin activity & child activity - vote like up was wrong - solved.
