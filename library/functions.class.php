@@ -17,8 +17,7 @@ class BUDDYPRESS_JSON_API_FUNCTION extends JSON_API_BuddypressRead_Controller {
 
         if (!isset($aParams [$sModule]))
             throw new Exception("Parameters for module not defined.");
-
-        foreach ($aParams [$sModule] as $sType => $aParameters) {
+		foreach ($aParams [$sModule] as $sType => $aParameters) {
 			foreach ($aParameters as $sValName => $sVal) {
                 self::$sVars [$sValName] = self::getVar($sValName, $sVal, $sType);
             }

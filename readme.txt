@@ -319,3 +319,9 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 =1.0.25 =
 
 * Plugin activity & child activity - vote like up was wrong - solved.
+
+
+=1.0.26 =
+
+* Forum details added for groups
+* Member extra details added.

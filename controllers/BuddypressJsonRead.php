@@ -1128,8 +1128,9 @@ class JSON_API_BuddypressRead_Controller {
      * @return array groups: array with meta infos
      */
     public function groups_get_groups() {
-        $this->init('groups');
-        $oReturn = new stdClass();
+        //$this->init('groups');
+		$this->init('forums');
+		$oReturn = new stdClass();
 
         if ($this->username !== false || username_exists($this->username)) {
             $oUser = get_user_by('login', $this->username);
@@ -1142,26 +1143,50 @@ class JSON_API_BuddypressRead_Controller {
         $aParams ['per_page'] = $this->per_page;
 
         $aGroups = groups_get_groups($aParams);
-
-        if ($aGroups['total'] == "0")
+		
+		if ($aGroups['total'] == "0")
             return $this->error('groups', 0);
-
+		
+		$counter = 0;
         foreach ($aGroups['groups'] as $aGroup) {
-            $oReturn->groups[(int) $aGroup->id]->name = $aGroup->name;
-            $oReturn->groups[(int) $aGroup->id]->description = $aGroup->description;
-            $oReturn->groups[(int) $aGroup->id]->status = $aGroup->status;
+			$oReturn->groups[$counter]->id = $aGroup->id;
+			$oReturn->groups[$counter]->name = $aGroup->name;
+            $oReturn->groups[$counter]->description = $aGroup->description;
+            $oReturn->groups[$counter]->status = $aGroup->status;
             if ($aGroup->status == "private" && !is_user_logged_in() && !$aGroup->is_member === true)
                 continue;
             $oUser = get_user_by('id', $aGroup->creator_id);
-            $oReturn->groups[(int) $aGroup->id]->creator[(int) $aGroup->creator_id]->username = $oUser->data->user_login;
-            $oReturn->groups[(int) $aGroup->id]->creator[(int) $aGroup->creator_id]->mail = $oUser->data->user_email;
-            $oReturn->groups[(int) $aGroup->id]->creator[(int) $aGroup->creator_id]->display_name = $oUser->data->display_name;
-            $oReturn->groups[(int) $aGroup->id]->slug = $aGroup->slug;
-            $oReturn->groups[(int) $aGroup->id]->is_forum_enabled = $aGroup->enable_forum == "1" ? true : false;
-            $oReturn->groups[(int) $aGroup->id]->date_created = $aGroup->date_created;
-            $oReturn->groups[(int) $aGroup->id]->count_member = $aGroup->total_member_count;
+            $oReturn->groups[$counter]->creator->userid = $aGroup->creator_id;
+			$oReturn->groups[$counter]->creator->username = $oUser->data->user_login;
+            $oReturn->groups[$counter]->creator->mail = $oUser->data->user_email;
+            $oReturn->groups[$counter]->creator->display_name = $oUser->data->display_name;
+            $oReturn->groups[$counter]->slug = $aGroup->slug;
+            $oReturn->groups[$counter]->is_forum_enabled = $aGroup->enable_forum == "1" ? true : false;
+            $oReturn->groups[$counter]->date_created = $aGroup->date_created;
+            $oReturn->groups[$counter]->count_member = $aGroup->total_member_count;
+			
+			$avatar_url = bp_core_fetch_avatar(array('object'=>'group','item_id'=>$aGroup->id, 'html'=>false, 'type'=>'full'));
+			$oReturn->groups[$counter]->avatar = $avatar_url;
+			
+			$iForumId = groups_get_groupmeta($aGroup->id, 'forum_id');
+			if(is_array($iForumId)){
+				$iForumId = $iForumId[0];
+			}
+			if($iForumId){
+				$oForum = bp_forums_get_forum((int) $iForumId);
+				if($oForum){
+					$oReturn->groups[$counter]->forum->id = $oForum->forum_id;
+					$oReturn->groups[$counter]->forum->name = $oForum->forum_name;
+					$oReturn->groups[$counter]->forum->slug = $oForum->forum_slug;
+					$oReturn->groups[$counter]->forum->description = $oForum->forum_desc;
+					$oReturn->groups[$counter]->forum->topics_count = (int) $oForum->topics;
+					$oReturn->groups[$counter]->forum->post_count = (int) $oForum->posts;
+				}
+			}
+			$counter++;
         }
-
+		
+		echo '<pre>';print_r($oReturn);exit;
         $oReturn->count = count($aGroups['groups']);
 
         return $oReturn;
@@ -1303,20 +1328,24 @@ class JSON_API_BuddypressRead_Controller {
             return $this->error('base', 0);
         else if (is_int($mGroupExists) && $mGroupExists !== true)
             return $this->error('groups', $mGroupExists);
-
-        $aMembers = groups_get_group_members($this->groupid, $this->limit);
+		
+		$aMembers = groups_get_group_members($this->groupid, $this->limit);
+		
         if ($aMembers === false) {
             $oReturn->group_members = array();
             $oReturn->count = 0;
             return $oReturn;
         }
-
+		$counter=0;
         foreach ($aMembers['members'] as $aMember) {
-            $oReturn->group_members[(int) $aMember->user_id]->username = $aMember->user_login;
-            $oReturn->group_members[(int) $aMember->user_id]->mail = $aMember->user_email;
-            $oReturn->group_members[(int) $aMember->user_id]->display_name = $aMember->display_name;
+            $oReturn->group_members[$counter]->username = $aMember->user_login;
+            $oReturn->group_members[$counter]->mail = $aMember->user_email;
+            $oReturn->group_members[$counter]->display_name = $aMember->display_name;
+			$avatar_url = bp_core_fetch_avatar(array('object'=>'user','item_id'=>$aMember->user_id, 'html'=>false, 'type'=>'full'));
+			$oReturn->group_members[$counter]->avatar = $avatar_url;
+			$counter++;
         }
-        $oReturn->count = $aMembers['count'];
+		$oReturn->count = $aMembers['count'];
 
         return $oReturn;
     }
