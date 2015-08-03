@@ -325,3 +325,13 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 
 * Forum details added for groups
 * Member extra details added.
+
+=1.0.27 =
+
+* solved mistake of version 1.0.26
+
+
+=1.0.28 =
+
+* added group detail api
+* avatar for group creator in listing

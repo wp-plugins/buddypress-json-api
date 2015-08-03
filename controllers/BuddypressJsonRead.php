@@ -1117,7 +1117,55 @@ class JSON_API_BuddypressRead_Controller {
         $oReturn->friendshipstatus = friends_check_friendship_status($oUser->data->ID, $oUserFriend->data->ID);
         return $oReturn;
     }
-
+	
+	function groups_get_groupdetail()
+	{
+		$this->init('forums');
+		$oReturn = new stdClass();
+		
+		$group_id = $_GET['groupId'];
+		if(!$group_id){ $oReturn->error = __('Wrong group id.','aheadzen'); return $oReturn;}
+		$aGroup = groups_get_group( array( 'group_id' => $group_id ) );
+		if($aGroup){
+			$oReturn->groupfields->id = $aGroup->id;
+			$oReturn->groupfields->name = $aGroup->name;
+            $oReturn->groupfields->description = $aGroup->description;
+            $oReturn->groupfields->status = $aGroup->status;
+           
+			$oUser = get_user_by('id', $aGroup->creator_id);
+			$useravatar_url = bp_core_fetch_avatar(array('object'=>'user','item_id'=>$aGroup->creator_id, 'html'=>false, 'type'=>'full'));
+            $oReturn->groupfields->creator->userid = $aGroup->creator_id;
+			$oReturn->groupfields->creator->username = $oUser->data->user_login;
+            $oReturn->groupfields->creator->mail = $oUser->data->user_email;
+            $oReturn->groupfields->creator->display_name = $oUser->data->display_name;
+			$oReturn->groupfields->creator->avatar = $useravatar_url;
+            $oReturn->groupfields->slug = $aGroup->slug;
+            $oReturn->groupfields->is_forum_enabled = $aGroup->enable_forum == "1" ? true : false;
+            $oReturn->groupfields->date_created = $aGroup->date_created;
+            $oReturn->groupfields->count_member = $aGroup->total_member_count;
+			
+			$avatar_url = bp_core_fetch_avatar(array('object'=>'group','item_id'=>$aGroup->id, 'html'=>false, 'type'=>'full'));
+			$oReturn->groupfields->avatar = $avatar_url;
+			
+			$iForumId = groups_get_groupmeta($aGroup->id, 'forum_id');
+			if(is_array($iForumId)){
+				$iForumId = $iForumId[0];
+			}
+			if($iForumId){
+				$oForum = bp_forums_get_forum((int) $iForumId);
+				if($oForum){
+					$oReturn->groupfields->forum->id = $oForum->forum_id;
+					$oReturn->groupfields->forum->name = $oForum->forum_name;
+					$oReturn->groupfields->forum->slug = $oForum->forum_slug;
+					$oReturn->groupfields->forum->description = $oForum->forum_desc;
+					$oReturn->groupfields->forum->topics_count = (int) $oForum->topics;
+					$oReturn->groupfields->forum->post_count = (int) $oForum->posts;
+				}
+			}
+		}
+		
+		return $oReturn;
+	}
     /**
      * Returns an array with groups matching to the given parameters
      * @param String username: the username you want information from (default => all groups)
@@ -1156,10 +1204,12 @@ class JSON_API_BuddypressRead_Controller {
             if ($aGroup->status == "private" && !is_user_logged_in() && !$aGroup->is_member === true)
                 continue;
             $oUser = get_user_by('id', $aGroup->creator_id);
+			$useravatar_url = bp_core_fetch_avatar(array('object'=>'user','item_id'=>$aGroup->creator_id, 'html'=>false, 'type'=>'full'));
             $oReturn->groups[$counter]->creator->userid = $aGroup->creator_id;
 			$oReturn->groups[$counter]->creator->username = $oUser->data->user_login;
             $oReturn->groups[$counter]->creator->mail = $oUser->data->user_email;
             $oReturn->groups[$counter]->creator->display_name = $oUser->data->display_name;
+			$oReturn->groups[$counter]->creator->avatar = $useravatar_url;
             $oReturn->groups[$counter]->slug = $aGroup->slug;
             $oReturn->groups[$counter]->is_forum_enabled = $aGroup->enable_forum == "1" ? true : false;
             $oReturn->groups[$counter]->date_created = $aGroup->date_created;
@@ -1337,7 +1387,8 @@ class JSON_API_BuddypressRead_Controller {
         }
 		$counter=0;
         foreach ($aMembers['members'] as $aMember) {
-            $oReturn->group_members[$counter]->username = $aMember->user_login;
+            $oReturn->group_members[$counter]->id = $aMember->user_id;
+			$oReturn->group_members[$counter]->username = $aMember->user_login;
             $oReturn->group_members[$counter]->mail = $aMember->user_email;
             $oReturn->group_members[$counter]->display_name = $aMember->display_name;
 			$avatar_url = bp_core_fetch_avatar(array('object'=>'user','item_id'=>$aMember->user_id, 'html'=>false, 'type'=>'full'));
