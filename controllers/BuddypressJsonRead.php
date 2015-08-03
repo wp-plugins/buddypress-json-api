@@ -1186,8 +1186,7 @@ class JSON_API_BuddypressRead_Controller {
 			$counter++;
         }
 		
-		echo '<pre>';print_r($oReturn);exit;
-        $oReturn->count = count($aGroups['groups']);
+		$oReturn->count = count($aGroups['groups']);
 
         return $oReturn;
     }
