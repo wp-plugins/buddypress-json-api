@@ -6,12 +6,208 @@
 
 require_once BUDDYPRESS_JSON_API_HOME . '/library/functions.class.php';
 
+$upload_dir = wp_upload_dir();
+
 class JSON_API_BuddypressRead_Controller {
 
 	function __construct() {
 	   header("Access-Control-Allow-Origin: *");
+		$userid = 0;
+		if($_GET['userid']){
+			$userid = $_GET['userid'];
+		}else if($_POST['userid']){
+			$userid = $_POST['userid'];
+		}else if($this->userid){
+			$userid = $this->userid;
+		}
+		if($userid>0){
+			bp_update_user_last_activity($userid);
+		}
 	}
-   
+	
+	function set_push_notification_device_token () {
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_GET['token']){$oReturn->error = __('Wrong token.','aheadzen'); return $oReturn;}
+		if(!$_GET['userid']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
+		$user_id = $_GET['userid'];
+		$token = $_GET['token'];
+		if($user_id && $token){
+			update_user_meta( $user_id, 'ionic_push_device_token', $token);
+		}
+		$oReturn->success = __('Ionic Push Token added successfully.','aheadzen');
+		return $oReturn;
+	}
+	/**
+	 * Handles link preview requests.
+	 */
+	function activity_preview_link () {
+		$_POST['data']=$_GET['data'];
+		$BpfbBinder = new BpfbBinder();
+		return $BpfbBinder->ajax_preview_link();
+	}
+	
+	public function activity_set_bpfb_url()
+	{
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->msg = '';
+		$oReturn->success = '';
+		$oReturn->error = '';
+		
+		if(!$_POST){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['title']){$oReturn->message = __('No title added.','aheadzen'); return $oReturn;}
+		
+		$user_id = $_POST['userid'];
+		$title = $_POST['title'];
+		$text = $_POST['text'];
+		$url = $_POST['url'];
+		$image = $_POST['image'];
+		
+		$images = explode(',',$imagesfile);		
+		$BpfbCodec = new BpfbCodec();
+		
+		
+		$bpfb_code = $BpfbCodec->create_images_tag($images);
+		$bpfb_code = apply_filters('bpfb_code_before_save', $bpfb_code);
+		if(function_exists('bp_activity_post_update')){
+			$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
+			global $blog_id;
+			bp_activity_update_meta($activity_id, 'bpfb_blog_id', $blog_id);
+		}else{
+			$oReturn->error = __('Add activity error. Something wrong.','aheadzen');
+		}
+		$oReturn->success->id = $activity_id;
+		$oReturn->success->msg = __('Activity added successfully.','aheadzen');
+		return $oReturn;
+	}
+	
+	public function activity_set_bpfb()
+	{
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->msg = '';
+		$oReturn->success = '';
+		$oReturn->error = '';
+		
+		if(!$_POST){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
+		
+		$user_id = $_POST['userid'];
+		$BpfbCodec = new BpfbCodec();
+		if (!empty($_POST['bpfb_video_url'])) {
+			$bpfb_code = $BpfbCodec->create_video_tag($_POST['bpfb_video_url']);
+		}
+		if (!empty($_POST['bpfb_url'])) {
+			$bpfb_code = $BpfbCodec->create_link_tag($_POST['bpfb_url'],$_POST['title'],$_POST['text'],$_POST['image']);
+		}
+		if (!empty($_POST['imagesfile'])) {
+			$imagesfile = $_POST['imagesfile'];		
+			$images = explode(',',$imagesfile);	
+			$bpfb_code = $BpfbCodec->create_images_tag($images);
+		}
+		
+		$bpfb_code = apply_filters('bpfb_code_before_save', $bpfb_code);
+		if(function_exists('bp_activity_post_update')){
+			$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
+			global $blog_id;
+			bp_activity_update_meta($activity_id, 'bpfb_blog_id', $blog_id);
+		}else{
+			$oReturn->error = __('Add activity error. Something wrong.','aheadzen');
+		}
+		$oReturn->success->id = $activity_id;
+		$oReturn->success->msg = __('Activity added successfully.','aheadzen');
+		return $oReturn;
+	}
+	
+	public function activity_upload_image()
+	{
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->msg = '';
+		$oReturn->success = '';
+		$oReturn->error = '';
+		
+		if(!$_POST){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_FILES){$oReturn->message = __('Wrong picture.','aheadzen'); return $oReturn;}
+		$oReturn = $this->upload_image_activity();
+		
+		return $oReturn;
+	}
+	
+	function upload_image_activity(){
+		//$oReturn = new stdClass();
+		$oReturn->msg = '';
+		$oReturn->success = '';
+		$oReturn->error = '';
+		global $bp;
+		
+		if($_FILES && $_FILES['file'] && $_FILES['file']['name'] && $_FILES['file']['size']>0 && $_FILES['file']['error']==0)
+		{
+			$tmp_name = $_FILES['file']['tmp_name'];
+			$filename = $_FILES['file']['name'];
+			$type = $_FILES['file']['type'];
+			$size = $_FILES['file']['size'];
+			
+			$basedir = BPFB_BASE_IMAGE_DIR;
+			if(!file_exists($basedir)){@wp_mkdir_p( $basedir );}
+			
+			$srch = array(' '," ",'"',"'",'-','`','~','!','@','#','$','%','^','&','*','(',')','+','=','|','\\','[',']','{','}',',','/','<','>');
+			$repl = array('_','_','','','_','','','','','','','','','','','','','','','','','','','','','','','','');
+			$filename = preg_replace('/[^0-9]/', '-', microtime()).'-'.rand(1,1000).'-'.str_replace($srch,$repl,$filename);
+			$targetFile = $basedir.$filename;
+			$targetFileURL = BPFB_BASE_IMAGE_URL.$filename;
+			$uploadOk = 1;
+			$imageFileType = pathinfo($targetFile,PATHINFO_EXTENSION);
+			// Check if image file is a actual image or fake image
+			$check = getimagesize($tmp_name);
+			if($check == false) {			
+				$oReturn->error = __('File is not an image.','aheadzen');				
+			}/*elseif ($size > 500000) { // Check file size
+				$oReturn->error = __('Sorry, your file is too large.','aheadzen');
+			}*/
+			else // Allow certain file formats
+			if($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg" && $imageFileType != "gif" ) {
+				$oReturn->error = __('Sorry, only JPG, JPEG, PNG & GIF files are allowed.','aheadzen');
+			}else{
+				if (move_uploaded_file($tmp_name, $targetFile)) {
+					if($targetFile){
+						if (function_exists('wp_get_image_editor')) { // New way of resizing the image
+							$image = wp_get_image_editor($targetFile);
+							if (!is_wp_error($image)) {
+								list($thumb_w,$thumb_h) = Bpfb_Data::get_thumbnail_size();
+								$thumb_filename  = $image->generate_filename('bpfbt');
+								$image->resize($thumb_w, $thumb_h, false);
+								
+								// Alright, now let's rotate if we can
+								if (function_exists('exif_read_data')) {
+									$exif = exif_read_data($targetFile); // Okay, we now have the data
+									if (!empty($exif['Orientation']) && 3 === (int)$exif['Orientation']) $image->rotate(180);
+									else if (!empty($exif['Orientation']) && 6 === (int)$exif['Orientation']) $image->rotate(-90);
+									else if (!empty($exif['Orientation']) && 8 === (int)$exif['Orientation']) $image->rotate(90);
+								}
+								$image->save($thumb_filename);
+							}
+						} else {
+							image_resize($targetFile, $thumb_w, $thumb_h, false, 'bpfbt');
+						}						
+					}
+					//$oReturn->success->filenurl = $targetFileURL;
+					$oReturn = $filename;
+					//$oReturn->success->msg = __('The file has been uploaded.','aheadzen');
+					
+				} else {
+					//$oReturn->success->outputFile = $outputFile;
+					//$oReturn->success->filename = $filename;
+					//$oReturn->error = __('Sorry, there was an error uploading file.','aheadzen');
+				}
+			}
+		}	
+		
+		return $oReturn;
+	}
+	
 	public function members_get_members() 
 	 {
 		header("Access-Control-Allow-Origin: *");
@@ -550,6 +746,9 @@ class JSON_API_BuddypressRead_Controller {
 							}										
 						}
 						$oReturn->activities[$acounter]->action = $oActivity->action;
+						if(strlen($oActivity->content)>10){
+							$oActivity->content = do_shortcode($oActivity->content);
+						}
 						$oReturn->activities[$acounter]->content = $oActivity->content;
 						$oReturn->activities[$acounter]->is_hidden = $oActivity->hide_sitewide === "0" ? false : true;
 						$oReturn->activities[$acounter]->is_spam = $oActivity->is_spam === "0" ? false : true;
@@ -825,11 +1024,17 @@ class JSON_API_BuddypressRead_Controller {
      * @return array notifications: the notifications as a link
      */
     public function notifications_get_notifications() {
-        $this->init('notifications');
+        header("Access-Control-Allow-Origin: *");
+		$this->init('notifications');
         $oReturn = new stdClass();
-
-        $aNotifications = bp_core_get_notifications_for_user(get_current_user_id());
-
+		$oReturn->msg = '';
+		$oReturn->success = '';
+		$oReturn->error = '';
+		
+		if(!$_GET['userid']){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
+		
+		$aNotifications = bp_core_get_notifications_for_user($_GET['userid']);
+		
         if (empty($aNotifications)) {
             return $this->error('notifications');
         }
@@ -999,8 +1204,8 @@ class JSON_API_BuddypressRead_Controller {
         $aParams ['type'] = $this->type;
         $aParams ['page'] = $this->page;
         $aParams ['per_page'] = $this->per_page;
-
-        $aGroups = groups_get_groups($aParams);
+		
+		$aGroups = groups_get_groups($aParams);
 		
 		if ($aGroups['total'] == "0")
             return $this->error('groups', 0);

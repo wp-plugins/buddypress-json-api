@@ -340,3 +340,8 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 =1.0.29 =
 
 * Activity mark as spam api added, API name :  "activity_mark_spam"
+
+
+=1.0.30 =
+
+* member last activity updated related settings added.
