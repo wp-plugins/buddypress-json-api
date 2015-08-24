@@ -25,6 +25,300 @@ class JSON_API_BuddypressRead_Controller {
 		}
 	}
 	
+	/*
+	Share to Users -- http://localhost/api/buddypressread/share_the_link/?id=19&ptype=post&userid=1&shareto=user&sharetouser=@buyer1,@chynna,@testuser5
+	Share to Activity -- http://localhost/api/buddypressread/share_the_link/?id=19&ptype=post&userid=1
+	Share to Group -- http://localhost/api/buddypressread/share_the_link/?id=19&ptype=post&userid=1&shareto=group&sharetogroup=1
+	id = post id, page id, forum topic id.....
+	ptype = post type like post, page,forum topic 
+	userid = poster user id/current logged user id
+	shareto = 
+		keep blank -- for activity share
+		group -- for share in group activity
+		user -- for share in users mention list
+	sharetouser = user mention id like 	:: @buyer1,@chynna,@testuser5
+	sharetogroup = group id to which group user want to share
+	
+	*/
+	function share_activity_data()
+	{
+		header("Access-Control-Allow-Origin: *");
+		$post_data = array();
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if($_GET['id']==''){$oReturn->error = __('Wrong activity ID','aheadzen'); return $oReturn;}
+		if($_GET['userid']==''){$oReturn->error = __('Wrong User ID','aheadzen'); return $oReturn;}
+		
+		$post_data['aid'] = $_GET['id'];
+		$post_data['userid'] = $_GET['userid'];
+		$post_data['sharetogroup']=$post_data['mentions']='';
+		$post_data['shareto'] = $_GET['shareto'];
+		if($_GET['shareto']=='user'){
+			if($_GET['sharetouser']==''){$oReturn->error = __('Wrong User ID','aheadzen'); return $oReturn;}
+			$post_data['mentions'] = $_GET['sharetouser'];
+		}elseif($_GET['shareto']=='group'){
+			if($_GET['sharetogroup']==''){$oReturn->error = __('Wrong Group ID','aheadzen'); return $oReturn;}
+			$post_data['sharetogroup'] = $_GET['sharetogroup'];
+		}
+		
+		$activitys = bp_activity_get(array('in'	=> $post_data['aid']));
+		if(!$activitys){$oReturn->error = __('Wrong activity ID','aheadzen'); return $oReturn;}
+		$activitie = $activitys['activities'][0];
+		$post_data['activity_user_id'] = $activitie->user_id;
+		$activity_content = $post_data['mentions'];
+		$activity_action = '';		
+		$display_name = bp_core_get_user_displaynames($post_data['userid']);
+		$add_primary_link     = bp_core_get_userlink($post_data['userid'], false, true );		
+		$author_display_name = bp_core_get_user_displaynames($post_data['activity_user_id']);
+		$author_display_name = $author_display_name[$post_data['activity_user_id']];
+		$author_primary_link     = bp_core_get_userlink($post_data['activity_user_id'], false, true );		
+		$activity_action = '<a href="'.$add_primary_link.'">'.$display_name[$post_data['userid']].'</a> shared <a href="'.$author_primary_link.'">'.$author_display_name.'</a>\'s activity';
+		
+		if($post_data['sharetogroup']){
+			$bp = buddypress();
+			$bp->groups->current_group = groups_get_group(array('group_id' =>$post_data['sharetogroup']));
+			if(groups_is_user_member($post_data['userid'],$post_data['sharetogroup'])){
+				//$activity_action  = bp_core_get_userlink($post_data['userid']).' shared <a href="'.$author_primary_link.'">'.$author_display_name.'</a>\'s activity in the group <a href="' . bp_get_group_permalink( $bp->groups->current_group ) . '">' . esc_attr( $bp->groups->current_group->name ) . '</a>';
+				$content_filtered = apply_filters( 'groups_activity_new_update_content', $activity_content );
+				
+				$activity_id = groups_record_activity(array(
+					'user_id' => $post_data['userid'],
+					'action'  => $activity_action,
+					'content' => $content_filtered,
+					'type'    => 'activityshare',
+					'item_id' => $post_data['sharetogroup'],
+					'secondary_item_id' => $post_data['aid']
+				) );
+
+				groups_update_groupmeta($post_data['sharetogroup'], 'last_activity', bp_core_current_time());
+				$oReturn->success->id = $activity_id;
+				$oReturn->success->msg = __('Activity shared in group successfully.','aheadzen');
+			}else{
+				$oReturn->error = __('User is not member of group.','aheadzen'); return $oReturn;
+			}
+		}else{
+			//$activity_action = '<a href="'.$add_primary_link.'">'.$display_name[$post_data['userid']].'</a> shared <a href="'.$author_primary_link.'">'.$author_display_name.'</a>\'s activity';
+			$add_content = apply_filters( 'bp_activity_new_update_content', $activity_content );
+			$activity_id = bp_activity_add( array(
+						'user_id'      => $post_data['userid'],
+						'content'      => $add_content,
+						'primary_link' => $add_primary_link,
+						'component'    => buddypress()->activity->id,
+						'type'         => 'activityshare',
+						'action'       => $activity_action,
+						'item_id'	   => $post_data['aid']
+					) );
+			if($activity_id){
+				bp_update_user_meta($post_data['userid'], 'bp_latest_update', array(
+					'id'      => $activity_id,
+					'content' => $activity_content
+				));
+				$oReturn->success->id = $activity_id;
+				if($post_data['mentions']){
+					$oReturn->success->msg = __('Activity shared with users successfully.','aheadzen');
+				}else{
+					$oReturn->success->msg = __('Activity shared successfully.','aheadzen');
+				}
+			}else{
+				$oReturn->error = __('Activity added error.','aheadzen');
+			}
+		}
+		return $oReturn;
+	}
+	/*
+	http://localhost/api/buddypressread/share_the_link/?id=19&ptype=post&userid=1&shareto=user&sharetouser=@buyer1,@chynna,@testuser5
+	http://localhost/api/buddypressread/share_the_link/?id=19&ptype=post&userid=1
+	http://localhost/api/buddypressread/share_the_link/?id=19&ptype=post&userid=1&shareto=group&sharetogroup=1
+	id = post id, page id, forum topic id.....
+	ptype = post type like post, page,forum topic 
+	userid = poster user id/current logged user id
+	sharteto = 
+		keep blank -- for activity share
+		group -- for share in group activity
+		user -- for share in users mention list
+	sharetouser = user mention id like 	:: @buyer1,@chynna,@testuser5
+	sharetogroup = group id to which group user want to share
+	
+	*/
+	function share_the_link(){
+		$pid = $_GET['id'];
+		$post_data = array();
+		$post_data['sharetogroup']=$post_data['mentions']='';
+		if($_GET['shareto']=='user' && $_GET['sharetouser']){
+			$post_data['mentions'] = $_GET['sharetouser'];
+		}elseif($_GET['shareto']=='group' && $_GET['sharetogroup']){
+			$post_data['sharetogroup'] = $_GET['sharetogroup'];
+		}
+		
+		$post_data['userid'] = $_GET['userid'];
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if($pid==''){$oReturn->error = __('Wrong ID','aheadzen'); return $oReturn;}
+		if($_GET['userid']==''){$oReturn->error = __('Wrong User ID','aheadzen'); return $oReturn;}
+		
+		$post = array();		
+		$arg = array('p'=>$pid);
+		if($_GET['ptype']){
+			$arg['post_type']=$_GET['ptype'];
+		}
+		
+		query_posts($arg);
+		if(have_posts()){
+			while ( have_posts() ) : the_post();
+				$post_data['title'] = get_the_title();
+				$post_data['text'] = get_the_excerpt();
+				$post_data['bpfb_url'] = get_permalink();
+				$post_data['author_id'] = get_the_author_meta('ID');
+				$post_data['image'] = '';
+				$image_src = '';
+				preg_match('/<img.+src=[\'"](?P<src>.+)[\'"].*>/i', get_the_content(), $image);
+				if($image['src']){
+					$imgarr = explode('"',$image['src']);
+					$post_data['image'] = $imgarr[0];
+				}
+				if($post_data['image']==''){
+					if(has_post_thumbnail($pid)){
+						$image = wp_get_attachment_image_src(get_post_thumbnail_id($pid),'single-post-thumbnail');
+						$post_data['image'] = $image[0];
+					}else{
+						$images = get_children( array( 'post_parent' => $pid, 'post_status' => 'inherit', 'numberposts' => 1, 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => 'ASC', 'orderby' => 'ID' ) );
+						if ( $images ) {
+							$image = array_shift( $images );
+							$image_id = $image->ID;
+						}
+						if($image_id>0){
+							$adthumbarray = wp_get_attachment_image_src( $image_id, 'medium' );
+							if ( $adthumbarray ) {
+								$post_data['image'] = $adthumbarray[0];
+							} else {
+								$post_data['image'] = wp_get_attachment_image_src($image_id, 'thumbnail');
+							}
+						}
+					}
+				}
+				
+				$BpfbCodec = new BpfbCodec();
+				$activity_content = $post_data['mentions'].$BpfbCodec->create_link_tag($post_data['bpfb_url'],$post_data['title'],$post_data['text'],$post_data['image']);		
+				$display_name = bp_core_get_user_displaynames($post_data['userid']);
+				$primary_link     = bp_core_get_userlink($post_data['userid'], false, true );
+				$add_primary_link = apply_filters( 'bp_activity_new_update_primary_link', $primary_link );
+				$author_display_name = bp_core_get_user_displaynames($post_data['author_id']);
+				$author_primary_link     = bp_core_get_userlink($post_data['author_id'], false, true );
+				$author_display_name = $author_display_name[$post_data['author_id']];
+				
+				if($post_data['sharetogroup']){ /*share to group*/
+					$bp = buddypress();
+					$bp->groups->current_group = groups_get_group(array('group_id' =>$post_data['sharetogroup']));
+					if(groups_is_user_member($post_data['userid'],$post_data['sharetogroup'])){
+						$activity_action  = bp_core_get_userlink($post_data['userid']).' shared <a href="'.$author_primary_link.'">'.$author_display_name.'</a>\'s post in the group <a href="' . bp_get_group_permalink( $bp->groups->current_group ) . '">' . esc_attr( $bp->groups->current_group->name ) . '</a>';
+						//$activity_action  = sprintf( __( '%1$s shared in the group %2$s', 'buddypress'), bp_core_get_userlink($post_data['userid']), '<a href="' . bp_get_group_permalink( $bp->groups->current_group ) . '">' . esc_attr( $bp->groups->current_group->name ) . '</a>' );
+						$content_filtered = apply_filters( 'groups_activity_new_update_content', $activity_content );
+						
+						$activity_id = groups_record_activity(array(
+							'user_id' => $post_data['userid'],
+							'action'  => $activity_action,
+							'content' => $content_filtered,
+							'type'    => 'activityshare',
+							'item_id' => $post_data['sharetogroup']
+						) );
+
+						groups_update_groupmeta($post_data['sharetogroup'], 'last_activity', bp_core_current_time());
+						$oReturn->success->id = $activity_id;
+						$oReturn->success->msg = __('Activity added in group successfully.','aheadzen');
+					}else{
+						$oReturn->error = __('User is not member of group.','aheadzen'); return $oReturn;
+					}
+					$oReturn->success->msg = __('Shared in group successfully.','aheadzen');
+				}else{ /*share to activity*/
+					// Record this on the user's profile
+					$activity_action = '<a href="'.$add_primary_link.'">'.$display_name[$post_data['userid']].'</a> shared <a href="'.$author_primary_link.'">'.$author_display_name.'</a>\'s post';
+					$add_content = apply_filters( 'bp_activity_new_update_content', $activity_content );
+					// Now write the values
+					$activity_id = bp_activity_add( array(
+						'user_id'      => $post_data['userid'],
+						'content'      => $add_content,
+						'primary_link' => $add_primary_link,
+						'component'    => buddypress()->activity->id,
+						'type'         => 'activityshare',
+						'action'       => $activity_action,
+					) );
+					$activity_content = apply_filters( 'bp_activity_latest_update_content', $post_data['text'], $activity_content );
+					bp_update_user_meta($post_data['userid'], 'bp_latest_update', array(
+						'id'      => $activity_id,
+						'content' => $activity_content
+					));	
+					if($post_data['mentions']){
+						$oReturn->success->msg = __('Shared to users successfully.','aheadzen');
+					}else{
+						$oReturn->success->msg = __('Shared in activity successfully.','aheadzen');
+					}
+				}				
+				$oReturn->success->id = $activity_id;
+				
+			endwhile;
+			wp_reset_query();
+		}else{
+			$oReturn->error = __('No data available.','aheadzen');
+		}		
+		return $oReturn;
+	}
+	
+	function share_activity(){
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_POST){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['userid']){$oReturn->message = __('Wrong User try.','aheadzen'); return $oReturn;}
+		print_r($_POST);
+		return $oReturn;
+	}
+	
+	function follow_unfollow_set()
+	{
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_POST){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['userid']){$oReturn->message = __('Wrong User try.','aheadzen'); return $oReturn;}
+		if(!$_POST['leader_id']){$oReturn->message = __('Wrong Leader id.','aheadzen'); return $oReturn;}
+		
+		if(function_exists('bp_follow_is_following') && bp_follow_is_following(array('leader_id'=>$_POST['leader_id'],'follower_id'=>$_POST['userid'])))
+		{
+			if(function_exists('bp_follow_stop_following')){
+				if(bp_follow_stop_following(array('leader_id' => $_POST['leader_id'], 'follower_id' => $_POST['userid']))){
+					$oReturn->success = __('Unhallowed added successfully.','aheadzen');
+					$oReturn->is_following = 0;
+					if(function_exists('bp_follow_total_follow_counts')){
+						$oReturn->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' =>$_POST['leader_id'] ) );
+					}
+				}else{
+					$oReturn->error = __('Error while unhallowed.','aheadzen');
+					$oReturn->is_following = 1;
+				}
+			}
+		}else{
+			if(function_exists('bp_follow_start_following')){
+				if(bp_follow_start_following(array('leader_id' => $_POST['leader_id'], 'follower_id' => $_POST['userid']))){
+					$oReturn->success = __('Follower added successfully.','aheadzen');
+					$oReturn->is_following = 1;
+					if(function_exists('bp_follow_total_follow_counts')){
+						$oReturn->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' =>$_POST['leader_id'] ) );
+					}
+				}else{
+					$oReturn->error = __('Error while adding follower.','aheadzen');
+					$oReturn->is_following = 0;
+				}				
+			}
+		}
+		
+		return $oReturn;
+	}
+	
 	function set_push_notification_device_token () {
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
@@ -44,7 +338,7 @@ class JSON_API_BuddypressRead_Controller {
 	 * Handles link preview requests.
 	 */
 	function activity_preview_link () {
-		$_POST['data']=$_GET['data'];
+		$_POST['data']=urldecode($_GET['data']);
 		$BpfbBinder = new BpfbBinder();
 		return $BpfbBinder->ajax_preview_link();
 	}
@@ -208,6 +502,27 @@ class JSON_API_BuddypressRead_Controller {
 		return $oReturn;
 	}
 	
+	public function members_get_nameonly() 
+	 {
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->msg = '';
+		$oReturn->success = '';
+		$oReturn->error = '';
+		global $wpdb,$table_prefix;
+		
+		$keyword = trim($_GET['keyword']);
+		if($keyword){
+			$sql = "select user_login from ".$table_prefix."users where user_login not like \"%@%\" and user_login like \"$keyword%\" order by user_login limit 10";
+			$oReturn->members = $wpdb->get_col($sql);
+			
+		}else{
+			$oReturn->members = array();
+		}
+		//echo '<pre>';print_r($oReturn);exit;
+		return $oReturn;
+	 }
+	 
 	public function members_get_members() 
 	 {
 		header("Access-Control-Allow-Origin: *");
@@ -248,18 +563,25 @@ class JSON_API_BuddypressRead_Controller {
 					$oReturn->members[$counter]->username 	= $username;
 					$oReturn->members[$counter]->fullname 	= $user->fullname;
 					$oReturn->members[$counter]->email 		= $user->email;
-					$oReturn->members[$counter]->user_url 	= $user->user_url;
+					//$oReturn->members[$counter]->user_url 	= $user->user_url;
 					$oReturn->members[$counter]->last_active= $user->last_active;
-					$oReturn->members[$counter]->avatar_big = $avatar_big;
+					//$oReturn->members[$counter]->avatar_big = $avatar_big;
 					$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
 					
-					$profile_data = $user->profile_data;
+					/*$profile_data = $user->profile_data;
 					if($profile_data){
 						foreach($profile_data as $sFieldName => $val){
 							if(is_array($val)){
 								$oReturn->members[$counter]->$sFieldName = $val['field_data'];
 							}
 						}
+					}*/
+					if(function_exists('bp_follow_total_follow_counts')){
+						$oReturn->members[$counter]->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' => $user->id ) );
+					}
+					$oReturn->members[$counter]->is_following = 0;
+					if(function_exists('bp_follow_is_following') && bp_follow_is_following(array('leader_id'=>$user->id,'follower_id'=>$_GET['userid']))){
+						$oReturn->members[$counter]->is_following = 1;
 					}
 					$counter++;
 				}
@@ -727,12 +1049,12 @@ class JSON_API_BuddypressRead_Controller {
 						}
 						$oReturn->activities[$acounter]->id = $oActivity->id;
 						$oReturn->activities[$acounter]->component = $oActivity->component;
-						$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->id = $oActivity->user_id;
-						$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->username = $oActivity->user_login;
-						$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->mail = $oActivity->user_email;
-						$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->display_name = $oActivity->user_fullname;
-						$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->avatar_big = $oActivity->avatar_big;
-						$oReturn->activities[$acounter]->user[(int) $oActivity->user_id]->avatar_thumb = $oActivity->avatar_thumb;
+						$oReturn->activities[$acounter]->user->id = $oActivity->user_id;
+						$oReturn->activities[$acounter]->user->username = $oActivity->user_login;
+						$oReturn->activities[$acounter]->user->mail = $oActivity->user_email;
+						$oReturn->activities[$acounter]->user->display_name = $oActivity->user_fullname;
+						$oReturn->activities[$acounter]->user->avatar_big = $oActivity->avatar_big;
+						$oReturn->activities[$acounter]->user->avatar_thumb = $oActivity->avatar_thumb;
 						$oReturn->activities[$acounter]->type = $oActivity->type;
 						$oReturn->activities[$acounter]->time = $oActivity->date_recorded;
 						
@@ -972,6 +1294,13 @@ class JSON_API_BuddypressRead_Controller {
 				$oReturn->profilefields->user->username = $user->profile_data['user_login'];
 				$oReturn->profilefields->user->userid = $userid;			
 				
+				if(function_exists('bp_follow_total_follow_counts')){
+					$oReturn->profilefields->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' => $userid ) );
+				}
+				$oReturn->profilefields->is_following = 0;
+				if(function_exists('bp_follow_is_following') && bp_follow_is_following(array('leader_id'=>$userid,'follower_id'=>$_GET['cuserid']))){
+					$oReturn->profilefields->is_following = 1;
+				}
 			}
 			/* CUstom changes VAJ - 09-06-2015*/
 			return $oReturn;
@@ -985,39 +1314,148 @@ class JSON_API_BuddypressRead_Controller {
      * @return array messages: contains the messages
      */
     public function messages_get_messages() {
-        $this->init('messages');
+		header("Access-Control-Allow-Origin: *");
+	   $this->init('messages');
         $oReturn = new stdClass();
 
         $aParams ['box'] = $this->box;
         $aParams ['per_page'] = $this->per_page;
         $aParams ['max'] = $this->limit;
-
+		$aParams ['user_id'] = $_GET['userid'];
+		
+		$counter = 0;
         if (bp_has_message_threads($aParams)) {
+			global $messages_template;
             while (bp_message_threads()) {
                 bp_message_thread();
-                $aTemp = new stdClass();
-                preg_match("#>(.*?)<#", bp_get_message_thread_from(), $aFrom);
-                $oUser = get_user_by('login', $aFrom[1]);
-                $aTemp->from[(int) $oUser->data->ID]->username = $aFrom[1];
-                $aTemp->from[(int) $oUser->data->ID]->mail = $oUser->data->user_email;
-                $aTemp->from[(int) $oUser->data->ID]->display_name = $oUser->data->display_name;
-                preg_match("#>(.*?)<#", bp_get_message_thread_to(), $aTo);
-                $oUser = get_user_by('login', $aTo[1]);
-                $aTemp->to[(int) $oUser->data->ID]->username = $aTo[1];
-                $aTemp->to[(int) $oUser->data->ID]->mail = $oUser->data->user_email;
-                $aTemp->to[(int) $oUser->data->ID]->display_name = $oUser->data->display_name;
-                $aTemp->subject = bp_get_message_thread_subject();
+				$aTemp = new stdClass();
+				preg_match("#>(.*?)<#", bp_get_message_thread_from(), $aFrom);
+				$oUser = get_user_by('login', $aFrom[1]);
+				
+				$aTemp->from->id = $oUser->data->ID;
+				$aTemp->from->username = $aFrom[1];
+                $aTemp->from->mail = $oUser->data->user_email;
+                $aTemp->from->display_name = $oUser->data->display_name;
+				
+				preg_match_all('/(src)=("[^"]*")/i',bp_get_message_thread_avatar(), $user_avatar_result);
+				$aTemp->from->avatar = str_replace('"','',$user_avatar_result[2][0]);
+				preg_match("#>(.*?)<#", bp_get_message_thread_to(), $aTo);
+				$oUser = get_user_by('login', $aTo[1]);
+                $aTemp->to->id = $oUser->data->ID;
+				$aTemp->to->username = $aTo[1];
+                $aTemp->to->mail = $oUser->data->user_email;
+                $aTemp->to->display_name = $oUser->data->display_name;
+				
+				$message_id =  bp_get_message_thread_id();
+                $aTemp->message_id = $message_id;
+				$aTemp->subject = bp_get_message_thread_subject();
                 $aTemp->excerpt = bp_get_message_thread_excerpt();
                 $aTemp->link = bp_get_message_thread_view_link();
-
-                $oReturn->messages [(int) bp_get_message_thread_id()] = $aTemp;
+				$aTemp->date = bp_get_message_thread_last_post_date_raw();
+				$aTemp->unread = bp_message_thread_has_unread($_GET['userid']);				
+				$aTemp->thread_total_count = bp_get_message_thread_total_count($message_id);
+				$oReturn->messages [$counter] = $aTemp;
+				$counter++;
             }
         } else {
             return $this->error('messages');
         }
-        return $oReturn;
+		//echo '<pre>';print_r($oReturn);echo '</pre>';
+		return $oReturn;
     }
-
+	
+	function messages_read_unread(){
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		$messageId = $_GET['messageId'];
+		if(!$messageId){$oReturn->error = __('Wrong message ID.','aheadzen');}
+		
+		if($_GET['readUnread']=='read'){
+			messages_mark_thread_read($messageId);
+			$oReturn->success = __('Marked as read successfully.','aheadzen');
+		}else if($_GET['readUnread']=='unread'){
+			messages_mark_thread_unread($messageId);
+			$oReturn->success = __('Marked as unread successfully.','aheadzen');
+		}
+		return $oReturn;	
+	}
+	
+	function messages_delete_messages(){
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		$messageId = $_GET['messageId'];
+		if(!$messageId){$oReturn->error = __('Wrong message ID.','aheadzen');}
+		if(messages_delete_thread($messageId)){
+			$oReturn->success = __('Message Deleted Successfully.','aheadzen');
+		}else{
+			$oReturn->success = __('Cannot delete the message, something wrong.','aheadzen');
+		}		
+		return $oReturn;	
+	}
+	
+	function messages_get_detail(){
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		$messageId = $_GET['messageId'];
+		if(!$messageId){$oReturn->error = __('Wrong message ID.','aheadzen');}
+		
+		if(bp_thread_has_messages(array('thread_id'=>$messageId))){
+			$oReturn->message->id = $messageId;
+			$oReturn->message->subject = bp_get_the_thread_subject();
+			$oReturn->message->recipients_count = bp_get_thread_recipients_count();
+			$oReturn->message->max_thread_recipients_to = bp_get_max_thread_recipients_to_list();
+			if(bp_get_thread_recipients_count() <= 1){
+				$oReturn->message->conversation = __( 'You are alone in this conversation.', 'buddypress' );
+			}else if( bp_get_max_thread_recipients_to_list() <= bp_get_thread_recipients_count() ){
+				$oReturn->message->conversation = sprintf( __( 'Conversation between %s recipients.', 'buddypress' ), number_format_i18n( bp_get_thread_recipients_count() ) );
+			}else{
+				$oReturn->message->conversation = sprintf( __( 'Conversation between %s and you.', 'buddypress' ), bp_get_thread_recipients_list() );
+			}
+			
+			$counter = 0;
+			while(bp_thread_messages()){
+				bp_thread_the_message();
+				preg_match_all('/(src)=("[^"]*")/i',bp_get_the_thread_message_sender_avatar_thumb(), $user_avatar_result);
+				$oReturn->message->threads[$counter]->avatar = str_replace('"','',$user_avatar_result[2][0]);
+				$oReturn->message->threads[$counter]->sender_id = bp_get_the_thread_message_sender_id();
+				$oReturn->message->threads[$counter]->sender_name = bp_get_the_thread_message_sender_name();
+				$oReturn->message->threads[$counter]->time_since = bp_get_the_thread_message_time_since();
+				$oReturn->message->threads[$counter]->content = bp_get_the_thread_message_content();
+				
+				$counter++;
+			}
+		}
+		
+		//echo '<pre>';print_r($oReturn);
+		return $oReturn;	
+	}
+	
+	function messages_set_reply(){
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_POST){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['text']){$oReturn->message = __('Please senter proper comments.','aheadzen'); return $oReturn;}
+		if(!$_POST['userid']){$oReturn->message = __('Wrong user try.','aheadzen'); return $oReturn;}
+		if(!$_POST['thread_id']){$oReturn->message = __('Wrong message trying.','aheadzen'); return $oReturn;}
+		
+		$result = messages_new_message( array('thread_id'=>(int)$_POST['thread_id'], 'content' => $_POST['text'], 'sender_id' => $_POST['userid'] ) );
+		if(!empty( $result )){
+			$oReturn->success->msg = __('Message reply added successfully.','aheadzen');
+			$oReturn->success->id = $result;
+		}else{
+			$oReturn->error = __('Message reply add error.','aheadzen');
+		}
+		//echo '<pre>';print_r($oReturn);
+		return $oReturn;
+	}
     /**
      * Returns an array with notifications for the current user
      * @param none there are no parameters to be used
@@ -1055,12 +1493,16 @@ class JSON_API_BuddypressRead_Controller {
     public function friends_get_friends() {
         $this->init('friends');
         $oReturn = new stdClass();
+		if($_GET['userid']){
+			$oUser = get_user_by('id',$_GET['userid']);
+		}else{
+			if ($this->username === false || !username_exists($this->username)) {
+				return $this->error('friends', 0);
+			}
+			$oUser = get_user_by('login', $this->username);
+		}
 
-        if ($this->username === false || !username_exists($this->username)) {
-            return $this->error('friends', 0);
-        }
-
-        $oUser = get_user_by('login', $this->username);
+        
 
         $sFriends = bp_get_friend_ids($oUser->data->ID);
         $aFriends = explode(",", $sFriends);
@@ -1181,7 +1623,30 @@ class JSON_API_BuddypressRead_Controller {
 		
 		return $oReturn;
 	}
-    /**
+	
+	public function groups_get_nameonly() {
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';		
+		$user_id = $_GET['userid'];
+		if(!$user_id){ $oReturn->error = __('Wrong user id.','aheadzen'); return $oReturn;}
+		$arg = array('user_id'=>$user_id,'orderby'=>'name','order'=>'ASC');
+		$aGroups = groups_get_groups($arg);
+		$counter=0;
+		if($aGroups){
+			foreach($aGroups['groups'] as $grpObj){
+				$oReturn->group[$counter]->id = $grpObj->id;
+				$oReturn->group[$counter]->name = $grpObj->name;
+				$counter++;	
+			}
+		}else{
+			$oReturn->error = __('No data available.','aheadzen');
+		}
+		return $oReturn;
+	}
+	
+	/**
      * Returns an array with groups matching to the given parameters
      * @param String username: the username you want information from (default => all groups)
      * @param Boolean show_hidden: Show hidden groups to non-admins (default: false)
@@ -1402,21 +1867,32 @@ class JSON_API_BuddypressRead_Controller {
         }
 		$counter=0;
         foreach ($aMembers['members'] as $aMember) {
-            $oReturn->group_members[$counter]->id = $aMember->user_id;
-			$oReturn->group_members[$counter]->username = $aMember->user_login;
-            $oReturn->group_members[$counter]->mail = $aMember->user_email;
-            $oReturn->group_members[$counter]->display_name = $aMember->display_name;
-			//$oReturn->group_members[$counter]->fullname = $aMember->fullname;
-			$oReturn->group_members[$counter]->nicename = $aMember->user_nicename;
-			$oReturn->group_members[$counter]->registered = $aMember->user_registered;
-			$oReturn->group_members[$counter]->last_activity = $aMember->last_activity;
-			$oReturn->group_members[$counter]->friend_count = $aMember->total_friend_count;
-			$avatar_url = bp_core_fetch_avatar(array('object'=>'user','item_id'=>$aMember->user_id, 'html'=>false, 'type'=>'full'));
-			$oReturn->group_members[$counter]->avatar = $avatar_url;
-			$counter++;
+			if($aMember->user_id){
+				$oReturn->group_members[$counter]->id = $aMember->user_id;
+				$oReturn->group_members[$counter]->username = $aMember->user_login;
+				$oReturn->group_members[$counter]->mail = $aMember->user_email;
+				$oReturn->group_members[$counter]->display_name = $aMember->display_name;
+				//$oReturn->group_members[$counter]->fullname = $aMember->fullname;
+				$oReturn->group_members[$counter]->nicename = $aMember->user_nicename;
+				$oReturn->group_members[$counter]->registered = $aMember->user_registered;
+				$oReturn->group_members[$counter]->last_activity = $aMember->last_activity;
+				$oReturn->group_members[$counter]->friend_count = $aMember->total_friend_count;
+				$avatar_url = bp_core_fetch_avatar(array('object'=>'user','item_id'=>$aMember->user_id, 'html'=>false, 'type'=>'full'));
+				$oReturn->group_members[$counter]->avatar = $avatar_url;
+				
+				if(function_exists('bp_follow_total_follow_counts')){
+					$oReturn->group_members[$counter]->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' => $aMember->user_id ) );
+				}
+				$oReturn->group_members[$counter]->is_following = 0;
+				if(function_exists('bp_follow_is_following') && $_GET['userid'] && bp_follow_is_following(array('leader_id'=>$aMember->user_id,'follower_id'=>$_GET['userid']))){
+					$oReturn->group_members[$counter]->is_following = 1;
+				}
+				$counter++;
+			}
         }
-		$oReturn->count = $aMembers['count'];
-
+		$oReturn->count = $counter;
+		
+		//echo '<pre>';print_r($oReturn);
         return $oReturn;
     }
 
