@@ -345,3 +345,25 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 =1.0.30 =
 
 * member last activity updated related settings added.
+
+=1.0.31 =
+
+* Some API error correction
+
+
+=1.0.32 =
+
+* added new API for member's group list.
+
+=1.0.33 =
+
+* added new APIs.
+
+=1.0.34 =
+* activity api - item id and secondary item id added.
+* added stripcslashes fro activity content
+* new api for user_followers_users & user_followings_users
+
+
+=1.0.35 =
+* activity api - Grouping the activity.

@@ -25,6 +25,117 @@ class JSON_API_BuddypressRead_Controller {
 		}
 	}
 	
+	/************************************************
+	Change Password
+	************************************************/
+	 public function profile_change_pw() {		
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['userid']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
+		if(!$_POST['email']){$oReturn->error = __('Email address is a required field.','aheadzen'); return $oReturn;}
+		if(!filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)){$oReturn->error = __('Invalid Email.','aheadzen'); return $oReturn;}
+		if(!$_POST['pw']){$oReturn->error = __('Current password is wrong.','aheadzen'); return $oReturn;}
+		if(!$_POST['npw']){$oReturn->error = __('New password is wrong.','aheadzen'); return $oReturn;}
+		if(!$_POST['confirmpw']){$oReturn->error = __('New confirm password is wrong.','aheadzen'); return $oReturn;}
+		if($_POST['confirmpw']!=$_POST['npw']){$oReturn->error = __('Password should be same.','aheadzen'); return $oReturn;}		
+				
+		$userid = $_POST['userid'];
+		$pw = trim($_POST['pw']);
+		$user_email = trim($_POST['email']);
+		
+		$user_id = wp_update_user(array('ID' =>$userid,'user_email'=> $user_email));
+		
+		if ( !empty( $pw ) )
+			wp_set_password($pw,$userid );
+		
+		$oReturn->success->id = $userid;
+		$oReturn->success->pw = $pw;
+		$oReturn->success->email = $user_email;
+		$oReturn->success->message = __('Password Updated Successfully.','aheadzen');
+		return  $oReturn;
+	}
+	
+	/************************************************
+	Change Password
+	************************************************/
+	 public function user_profile_gallery() {		
+		
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_GET['userid']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
+		$files = array();
+		$bp_upload = xprofile_avatar_upload_dir('',$_GET['userid']);		
+		$basedir = $bp_upload['path'];
+		$baseurl = $bp_upload['url'];
+		$dh  = opendir($basedir);
+		$counter=0;
+		while (false !== ($filename = readdir($dh))) {
+			if($filename=='.' || $filename=='..'){				
+			}else{
+				if(file_exists($basedir.'/'.$filename)){
+					$oReturn->images[$counter]->src = $baseurl.'/'.$filename;
+					$oReturn->images[$counter]->sub = '';
+					//$files[] = $baseurl.'/'.$filename;
+					$counter++;
+				}
+			}
+		}
+		return  $oReturn;
+	}
+	
+	function upload_image_to_user()
+	{
+		header("Access-Control-Allow-Origin: *");
+		$post_data = array();
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if($_GET['image']==''){$oReturn->error = __('Wrong image URL','aheadzen'); return $oReturn;}
+		if($_GET['userid']==''){$oReturn->error = __('Wrong User ID','aheadzen'); return $oReturn;}
+		$user_id = $_GET['userid'];
+		$image = $_GET['image'];
+		$ext = pathinfo($image, PATHINFO_EXTENSION);
+		$imageFilename = basename($image,'.'.$ext);		
+		
+		$bp_upload = xprofile_avatar_upload_dir('',$user_id);		
+		$basedir = $bp_upload['path'];
+		$baseurl = $bp_upload['url'];
+		if(!file_exists($basedir)){@wp_mkdir_p( $basedir );}
+		$filename = 'avatar_'.$user_id.'.jpg';
+		$outputFile = $basedir.'/'.$filename;
+		$imageurl = $baseurl.'/'.$filename;
+		$cp = copy($image, $outputFile);
+
+		$imgdata = @getimagesize( $outputFile );
+		$img_width = $imgdata[0];
+		$img_height = $imgdata[1];
+		$upload_dir = wp_upload_dir();
+		$existing_avatar_path = str_replace( $upload_dir['basedir'], '', $outputFile );
+		$args = array(
+			'item_id'       => $user_id,
+			'original_file' => $existing_avatar_path,
+			'crop_x'        => 0,
+			'crop_y'        => 0,
+			'crop_w'        => $img_width,
+			'crop_h'        => $img_height
+		);
+		
+		if (bp_core_avatar_handle_crop( $args ) ) {
+			$imageurl = bp_core_fetch_avatar( array( 'item_id' => $user_id,'html'=>false,'type' => 'thumb'));
+			$oReturn->success->msg = 'Image uploaded successfully.';
+			$oReturn->success->url = $imageurl;
+		}else{
+			$oReturn->error = 'Upload error';
+		}
+		if(file_exists($outputFile)){@unlink($outputFile);}
+		return $oReturn;
+		
+	}
 	/*
 	Share to Users -- http://localhost/api/buddypressread/share_the_link/?id=19&ptype=post&userid=1&shareto=user&sharetouser=@buyer1,@chynna,@testuser5
 	Share to Activity -- http://localhost/api/buddypressread/share_the_link/?id=19&ptype=post&userid=1
@@ -37,8 +148,7 @@ class JSON_API_BuddypressRead_Controller {
 		group -- for share in group activity
 		user -- for share in users mention list
 	sharetouser = user mention id like 	:: @buyer1,@chynna,@testuser5
-	sharetogroup = group id to which group user want to share
-	
+	sharetogroup = group id to which group user want to share	
 	*/
 	function share_activity_data()
 	{
@@ -370,6 +480,9 @@ class JSON_API_BuddypressRead_Controller {
 			$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
 			global $blog_id;
 			bp_activity_update_meta($activity_id, 'bpfb_blog_id', $blog_id);
+			
+			
+			
 		}else{
 			$oReturn->error = __('Add activity error. Something wrong.','aheadzen');
 		}
@@ -389,6 +502,7 @@ class JSON_API_BuddypressRead_Controller {
 		if(!$_POST){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
 		
 		$user_id = $_POST['userid'];
+		
 		$BpfbCodec = new BpfbCodec();
 		if (!empty($_POST['bpfb_video_url'])) {
 			$bpfb_code = $BpfbCodec->create_video_tag($_POST['bpfb_video_url']);
@@ -403,6 +517,10 @@ class JSON_API_BuddypressRead_Controller {
 		}
 		
 		$bpfb_code = apply_filters('bpfb_code_before_save', $bpfb_code);
+		if(trim($_POST['content'])){
+			$bpfb_code = $_POST['content'] .'<br>'. $bpfb_code;
+		}
+		
 		if(function_exists('bp_activity_post_update')){
 			$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
 			global $blog_id;
@@ -410,6 +528,9 @@ class JSON_API_BuddypressRead_Controller {
 		}else{
 			$oReturn->error = __('Add activity error. Something wrong.','aheadzen');
 		}
+		
+
+
 		$oReturn->success->id = $activity_id;
 		$oReturn->success->msg = __('Activity added successfully.','aheadzen');
 		return $oReturn;
@@ -445,11 +566,14 @@ class JSON_API_BuddypressRead_Controller {
 			$size = $_FILES['file']['size'];
 			
 			$basedir = BPFB_BASE_IMAGE_DIR;
+			$user_id = $_GET['user_id'];
 			if(!file_exists($basedir)){@wp_mkdir_p( $basedir );}
-			
+			if(!file_exists($basedir.$user_id.'/')){@wp_mkdir_p($basedir.$user_id.'/');}
 			$srch = array(' '," ",'"',"'",'-','`','~','!','@','#','$','%','^','&','*','(',')','+','=','|','\\','[',']','{','}',',','/','<','>');
 			$repl = array('_','_','','','_','','','','','','','','','','','','','','','','','','','','','','','','');
-			$filename = preg_replace('/[^0-9]/', '-', microtime()).'-'.rand(1,1000).'-'.str_replace($srch,$repl,$filename);
+			$filename = preg_replace('/[^0-9]/', '-', microtime()).'-'.rand(1,1000).'-'.str_replace($srch,$repl,$filename);			
+			
+			$filename = $user_id.'/'.$filename;
 			$targetFile = $basedir.$filename;
 			$targetFileURL = BPFB_BASE_IMAGE_URL.$filename;
 			$uploadOk = 1;
@@ -502,6 +626,37 @@ class JSON_API_BuddypressRead_Controller {
 		return $oReturn;
 	}
 	
+	public function members_get_short() 
+	 {
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->msg = '';
+		$oReturn->success = '';
+		$oReturn->error = '';
+		global $wpdb,$table_prefix;
+		
+		$limit = 10;
+		$keyword = trim($_GET['keyword']);
+		if($_GET['limit']){$limit = trim($_GET['limit']);}
+		if($keyword){
+			$sql = "select ID,display_name,user_login from ".$table_prefix."users where user_login like \"$keyword%\" OR display_name like \"$keyword%\" order by display_name limit $limit";
+			$members = $wpdb->get_results($sql);
+			$counter = 0;
+			if($members){
+				foreach($members as $membersobj){
+					$oReturn->members[$counter]->id = $membersobj->ID;
+					$oReturn->members[$counter]->user_login = $membersobj->user_login;
+					$oReturn->members[$counter]->display_name = $membersobj->display_name;
+					$counter++;
+				}
+			}			
+		}else{
+			$oReturn->members = array();
+		}
+		//echo '<pre>';print_r($oReturn);exit;
+		return $oReturn;
+	 }
+	 
 	public function members_get_nameonly() 
 	 {
 		header("Access-Control-Allow-Origin: *");
@@ -554,10 +709,12 @@ class JSON_API_BuddypressRead_Controller {
 					if($user->avatar){
 						preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
 						$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+						if($avatar_big && !strstr($avatar_big,'http:')){ $avatar_big = 'http:'.$avatar_big;}
 					}
 					if($user->avatar_thumb){
 						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
 						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+						if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
 					}					
 					$oReturn->members[$counter]->id 		= $user->id;
 					$oReturn->members[$counter]->username 	= $username;
@@ -568,14 +725,14 @@ class JSON_API_BuddypressRead_Controller {
 					//$oReturn->members[$counter]->avatar_big = $avatar_big;
 					$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
 					
-					/*$profile_data = $user->profile_data;
+					$profile_data = $user->profile_data;
 					if($profile_data){
 						foreach($profile_data as $sFieldName => $val){
 							if(is_array($val)){
 								$oReturn->members[$counter]->$sFieldName = $val['field_data'];
 							}
 						}
-					}*/
+					}
 					if(function_exists('bp_follow_total_follow_counts')){
 						$oReturn->members[$counter]->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' => $user->id ) );
 					}
@@ -642,11 +799,15 @@ class JSON_API_BuddypressRead_Controller {
 					}
 					if($user->avatar){
 						preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
-						$oMentions->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+						$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+						if($avatar_big && !strstr($avatar_big,'http:')){ $avatar_big = 'http:'.$avatar_big;}
+						$oMentions->avatar_big = $avatar_big;
 					}
 					if($user->avatar_thumb){
 						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
-						$oMentions->avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+						if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+						$oMentions->avatar_thumb = $avatar_thumb;						
 					}
 				}
 				
@@ -836,7 +997,7 @@ class JSON_API_BuddypressRead_Controller {
 		return  $oReturn;
 	}
 	
-	public function profile_upload_photo()
+	public function profile_ionic_upload_photo()
 	{
 		/*
 		//below details are only for testing purpose.
@@ -844,7 +1005,98 @@ class JSON_API_BuddypressRead_Controller {
 		$_POST['user_id'] = 1;
 		$imageDataEncoded = base64_encode(file_get_contents('http://localhost/profile_pic_192063.jpg'));
 		$_POST['picture_code']=$imageDataEncoded;
-		*/		
+		*/	
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_POST){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
+		if($_FILES && $_FILES['file'] && $_FILES['file']['name']){ }else{$oReturn->message = __('Wrong picture.','aheadzen'); return $oReturn;}
+		
+		$clicked_pic = $_GET['clicked_pic'];
+		$user_id = $_GET['user_id'];
+		$bp_upload = xprofile_avatar_upload_dir('',$user_id);		
+		$basedir = $bp_upload['path'];
+		$baseurl = $bp_upload['url'];
+		
+		if($_FILES && $_FILES['file'] && $_FILES['file']['name'] && $_FILES['file']['size']>0 && $_FILES['file']['error']==0)
+		{
+			$tmp_name = $_FILES['file']['tmp_name'];
+			$filename = $_FILES['file']['name'];
+			$type = $_FILES['file']['type'];
+			$size = $_FILES['file']['size'];
+			
+			$targetFile = $basedir.$filename;
+			$targetFileURL = $baseurl.$filename;
+			$uploadOk = 1;
+			$imageFileType = pathinfo($targetFile,PATHINFO_EXTENSION);
+			
+			if(!file_exists($basedir)){@wp_mkdir_p( $basedir );}
+			$filename = $clicked_pic.'_'.$user_id.'.'.$imageFileType;
+			$outputFile = $basedir.'/'.$filename;
+			$imageurl = $outputFileURL = $baseurl.'/'.$filename;
+			
+			// Check if image file is a actual image or fake image
+			$check = getimagesize($tmp_name);
+			if($check == false) {			
+				$oReturn->error = __('File is not an image.','aheadzen');				
+			}/*elseif ($size > 500000) { // Check file size
+				$oReturn->error = __('Sorry, your file is too large.','aheadzen');
+			}*/
+			else // Allow certain file formats
+			if($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg" && $imageFileType != "gif" ) {
+				$oReturn->error = __('Sorry, only JPG, JPEG, PNG & GIF files are allowed.','aheadzen');
+			}else{
+				if (move_uploaded_file($tmp_name, $outputFile)) {
+					if($outputFile){
+						if($outputFile && $clicked_pic=='cover_pic'){
+							update_user_meta( $user_id, 'bbp_cover_pic', $imageurl);
+							$imageurl1 = $imageurl;
+						}elseif($outputFile && $clicked_pic=='profile_pic'){
+							$imgdata = @getimagesize( $outputFile );
+							$img_width = $imgdata[0];
+							$img_height = $imgdata[1];
+							$upload_dir = wp_upload_dir();
+							$existing_avatar_path = str_replace( $upload_dir['basedir'], '', $outputFile );
+							$args = array(
+								'item_id'       => $user_id,
+								'original_file' => $existing_avatar_path,
+								'crop_x'        => 0,
+								'crop_y'        => 0,
+								'crop_w'        => $img_width,
+								'crop_h'        => $img_height
+							);
+							if (bp_core_avatar_handle_crop( $args ) ) {
+								$imageurl1 = bp_core_fetch_avatar( array( 'item_id' => $user_id,'html'=>false,'type' => 'full'));
+								// Add the activity
+								if(function_exists('bp_activity_add')){
+									bp_activity_add( array(
+										'user_id'   => $user_id,
+										'component' => 'profile',
+										'type'      => 'new_avatar'
+									));
+								}
+								$oReturn->success->image = $imageurl1;
+								$oReturn->success->msg = 'Image uploaded successfully.';
+							}else{
+								$oReturn->error = 'Upload error';
+							}
+						}						
+					}
+					return $oReturn = $imageurl1;					
+				}
+			}
+		}		
+		
+		$oReturn->imageurl = $outputFileURL;
+		$oReturn->error = $error;
+		return  $oReturn;
+	
+	}
+	
+	public function profile_upload_photo()
+	{
+		
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
 		$oReturn->success = '';
@@ -856,10 +1108,6 @@ class JSON_API_BuddypressRead_Controller {
 		$picture_code = $_POST['picture_code'];	
 		$bp_upload = xprofile_avatar_upload_dir('',$user_id);	
 		
-		if(strstr($picture_code,'data:image/')){
-			 $picture_code_arr = explode(',', $picture_code);
-			$picture_code = $picture_code_arr[1];
-		}
 		$basedir = $bp_upload['path'];
 		$baseurl = $bp_upload['url'];
 		if(!file_exists($basedir)){@wp_mkdir_p( $basedir );}
@@ -867,12 +1115,18 @@ class JSON_API_BuddypressRead_Controller {
 		$outputFile = $basedir.'/'.$filename;
 		$imageurl = $outputFileURL = $baseurl.'/'.$filename;
 		
+		if(strstr($picture_code,'data:image/')){
+			 $picture_code_arr = explode(',', $picture_code);
+			$picture_code = $picture_code_arr[1];
+		}
+		
 		$quality = 70;
 		if(file_exists($outputFile)){@unlink($outputFile);}
 		$data = base64_decode($picture_code);
 		$image = imagecreatefromstring($data);
 		$imageSave = imagejpeg($image, $outputFile, $quality);
 		imagedestroy($image);
+		if(!$imageSave){$oReturn->error = 'Image Save Error'; return  $oReturn;}
 		if($outputFile && $clicked_pic=='cover_pic'){
 			update_user_meta( $user_id, 'bbp_cover_pic', $imageurl);
 		}elseif($outputFile && $clicked_pic=='profile_pic'){
@@ -935,7 +1189,6 @@ class JSON_API_BuddypressRead_Controller {
 		
 		foreach($data as $fieldid=>$val)
 		{
-			$fieldid = (int)$fieldid;
 			if($fieldid && $fieldid >0){
 				$field_updated = xprofile_set_field_data( $fieldid, $userid, $val);
 			}
@@ -952,6 +1205,349 @@ class JSON_API_BuddypressRead_Controller {
 		return  $oReturn;
 	 }
 	 
+	 public function activity_get_activity() {
+		header("Access-Control-Allow-Origin: *");
+        $oReturn = new stdClass();
+		$oReturn->success = '';
+        
+		$activity_id = $_GET['activity_id'];
+		global $table_prefix,$wpdb;
+		if($activity_id){
+			$res = $wpdb->get_results("select id,action,content,user_id,item_id,secondary_item_id,date_recorded from ".$table_prefix."bp_activity where id=\"$activity_id\"");
+			if($res){
+				$oActivity = $res[0];
+				$oReturn->activitiy->id = $oActivity->id;
+				$oReturn->activitiy->action = $oActivity->action;
+				$oReturn->activitiy->content = $oActivity->content;
+				$oReturn->activitiy->user_id = $oActivity->user_id;
+				$oReturn->activitiy->item_id = $oActivity->item_id;
+				$oReturn->activitiy->secondary_item_id = $oActivity->secondary_item_id;
+				$oReturn->activitiy->date_recorded = $oActivity->date_recorded;
+				
+			}else{
+				$oReturn->error = __('Wrong Activity Id.','aheadzen'); 
+			}
+		}
+		return  $oReturn;
+	 }
+	 /**
+     * Returns an Array with all activities
+     * @param int pages: number of pages to display (default unset)
+     * @param int offset: number of entries per page (default 10 if pages is set, otherwise unset)
+     * @param int limit: number of maximum results (default 0 for unlimited)
+     * @param String sort: sort ASC or DESC (default DESC)
+     * @param String comments: 'stream' for within stream display, 'threaded' for below each activity item (default unset)
+     * @param Int userid: userID to filter on, comma-separated for more than one ID (default unset)
+     * @param String component: object to filter on e.g. groups, profile, status, friends (default unset)
+     * @param String type: action to filter on e.g. activity_update, profile_updated (default unset)
+     * @param int itemid: object ID to filter on e.g. a group_id or forum_id or blog_id etc. (default unset)
+     * @param int secondaryitemid: secondary object ID to filter on e.g. a post_id (default unset)
+     * @return array activities: an array containing the activities
+     */
+	 public function activity_get_activities_grouped() {
+		header("Access-Control-Allow-Origin: *");
+        $oReturn = new stdClass();
+		$oReturn->success = '';
+        $this->init('activity', 'see_activity');
+		
+		global $table_prefix,$wpdb;
+		if(!$this->userid && $_GET['username']){
+			$oUser = get_user_by('login', $_GET['username']);
+			if($oUser){$this->userid = $oUser->data->ID;}
+		}
+		
+		//$this->userid='1';
+		
+		$mentionid = $_GET['mentionid'];
+		
+		if($mentionid){
+			global $wpdb,$table_prefix;
+			$parent_activity = $wpdb->get_var("select item_id from ".$table_prefix."bp_activity where id=\"$mentionid\"");
+			if($parent_activity==0){
+				$parent_activity = $mentionid;
+			}
+			$aParams = array();
+			$aParams ['display_comments'] = true;
+			$aParams['in'] = array($parent_activity);
+			//$aTempActivities = bp_activity_get($aParams);
+		}else{
+			
+			$aParams ['display_comments'] = $this->comments;
+			$aParams ['sort'] = $this->sort;		
+			
+			if($this->userid){
+				$aParams ['filter'] ['user_id'] = $this->userid;
+				$aParams ['filter'] ['object'] = $this->component;
+				$aParams ['filter'] ['type'] = $this->type;
+				$aParams ['filter'] ['primary_id'] = $this->itemid;
+				$aParams ['filter'] ['secondary_id'] = $this->secondaryitemid;
+			}
+			$iLimit = $this->limit;
+			
+			$page = $_GET['thepage'];
+			if(!$page){$page=1;}
+			$per_page = $_GET['per_page'];
+			if(!$per_page){$per_page=50;}
+			$count_total = $_GET['count_total'];
+			if(!$count_total){$count_total=100;}
+			
+			$aParams['page']=$page;
+			$aParams['per_page']=$per_page;
+			$aParams['count_total']=$count_total;
+			
+			$activities = trim($_GET['activities']);
+			if($activities){
+				$aParams['in']=$activities;
+			}
+		}
+		
+		if (!bp_has_activities($aParams))
+			return $this->error('activity');
+		if ($this->pages !== 1) {
+			$aParams ['max'] = true;
+			$aParams ['per_page'] = $this->offset;
+			$iPages = $this->pages;
+		}
+		$aTempActivities = bp_activity_get($aParams);
+		
+		$theActivityGroup = array();
+		if (!empty($aTempActivities['activities'])) {
+				$acounter=0;
+                foreach ($aTempActivities['activities'] as $oActivity) {					
+					if(($oActivity->component=='xprofile' && $oActivity->type=='updated_profile') || $oActivity->component=='profile' && $oActivity->type=='new_avatar'){
+						$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][0] = $oActivity;
+					}else{
+						$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][] = $oActivity;
+					}					
+				}
+				$activityFinalArr = array();
+				if($theActivityGroup){
+					foreach($theActivityGroup as $activityCompArr){
+						foreach($activityCompArr as $activityTypeArr){
+							foreach($activityTypeArr as $activityUerArr){
+								$theStrArr = array();
+								$varGrpName = '';
+								$spliterStr = '';
+								$multiActivity = 0;
+								if(count($activityUerArr)>1){
+									for($i=0;$i<count($activityUerArr);$i++){
+										$theAct = array();
+										$theAct = $activityUerArr[$i];
+										if($theAct->component=='groups' && $theAct->type=='joined_group'){
+											$spliterStr = 'joined the group';											
+										}else if($oActivity->component=='birth_chart' && $oActivity->type=='save_chart'){
+											$spliterStr = 'just received';											
+										}else if($oActivity->component=='members' && $oActivity->type=='new_member'){
+											$spliterStr = 'became a registered member';											
+										}
+										if($spliterStr){
+											$joinGroup = explode($spliterStr,$theAct->action);
+											$theStrArr[] = trim($joinGroup[0]);
+											$varGrpName = trim($joinGroup[1]);
+											$multiActivity=1;
+										}
+									}
+									$theActivityVar = $activityUerArr[0];
+									if(count($theStrArr)==2){$theSep = ' & ';}else{$theSep = ', ';}
+									if($spliterStr){$spliterStr = ' '.$spliterStr.' ';}
+									$theActivityVar->action = implode($theSep,$theStrArr).$spliterStr.$varGrpName;
+									$theActivityVar->multiActivity = $multiActivity;
+								}else{
+									$activityUerArr[0]->multiActivity = 0;
+									$theActivityVar=$activityUerArr[0];									
+								}
+								if($theActivityVar->component=='groups'){
+									$aGroup = groups_get_group( array( 'group_id' => $theActivityVar->item_id ) );
+									if($aGroup){
+										$Gname = $aGroup->name;
+										$Gdescription = $aGroup->description;
+										$Gslug = $aGroup->slug;
+										$Gpermalink = site_url('/') . 'groups/' . $Gslug . '/';
+									}
+									$avatar_url = bp_core_fetch_avatar(array('object'=>'group','item_id'=>$theActivityVar->item_id, 'html'=>false, 'type'=>'full'));
+									if($avatar_url && !strstr($avatar_url,'http:')){ $avatar_url = 'http:'.$avatar_url;}
+									$theActivityVar->content = '<a href="'.$Gpermalink.'"><img src="'.$avatar_url.'" alt="'.$Gname.'" class="full-image" style="max-width:250px;"></a>';									
+								}
+								$activityFinalArr[]=$theActivityVar;
+							}
+						}
+					}
+				}
+				
+				if(!$activityFinalArr){return $oReturn;}
+				for($a=0;$a<count($activityFinalArr);$a++){
+					$oActivity = $activityFinalArr[$a];
+					if($oActivity->type=='activity_comment'){
+						
+					}else{
+						$user = new BP_Core_User($oActivity->user_id);
+						if($user && $user->avatar){
+							if($user->avatar_thumb){
+								preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+								$thumb = str_replace('"','',$user_avatar_result[2][0]);
+								if($thumb && !strstr($thumb,'http:')){ $thumb = 'http:'.$thumb;}
+								$oActivity->avatar_thumb = $thumb;
+							}							
+						}
+						
+						$oReturn->activities[$acounter]->id = $oActivity->id;
+						$oReturn->activities[$acounter]->component = $oActivity->component;
+						$oReturn->activities[$acounter]->type = $oActivity->type;
+						$oReturn->activities[$acounter]->user->id = $oActivity->user_id;
+						$oReturn->activities[$acounter]->user->username = $oActivity->user_login;
+						$oReturn->activities[$acounter]->user->mail = $oActivity->user_email;
+						$oReturn->activities[$acounter]->user->display_name = $oActivity->user_fullname;
+						//$oReturn->activities[$acounter]->user->avatar_big = $oActivity->avatar_big;
+						$oReturn->activities[$acounter]->user->avatar_thumb = $oActivity->avatar_thumb;
+						$oReturn->activities[$acounter]->item_id = $oActivity->item_id;
+						$oReturn->activities[$acounter]->secondary_item_id = $oActivity->secondary_item_id;
+						$oReturn->activities[$acounter]->time = $oActivity->date_recorded;
+						$oReturn->activities[$acounter]->multiActivity = $oActivity->multiActivity;
+						
+						if($oActivity->type=='new_avatar'){
+							//$oActivity->action = '<a href="'.$oActivity->primary_link.'">'.$oActivity->user_fullname.'</a> changed their profile picture. <br /><img src="'.$oActivity->avatar_thumb.'" alt="" />';
+							$oActivity->action = 'Changed their profile picture. <br /><img src="'.$oActivity->avatar_thumb.'" alt="" />';
+						}else if($oActivity->type=='updated_profile'){
+							if($oActivity->action=='' && $oActivity->content==''){
+								//$oActivity->action = '<a href="'.$oActivity->primary_link.'">'.$oActivity->user_fullname.'</a> changed their profile';
+								$oActivity->action = 'Changed their profile';
+							}										
+						}
+						$oReturn->activities[$acounter]->action = $oActivity->action;
+						if(strlen($oActivity->content)>10){
+							$oActivity->content = do_shortcode($oActivity->content);
+						}
+						$oReturn->activities[$acounter]->content = stripcslashes($oActivity->content);
+						$oReturn->activities[$acounter]->is_hidden = $oActivity->hide_sitewide === "0" ? false : true;
+						$oReturn->activities[$acounter]->is_spam = $oActivity->is_spam === "0" ? false : true;
+						
+						$total_votes = $total_up = $total_down = 0;
+						$uplink = $downlink = '#';
+						$voteed_action = 'up';
+						if(class_exists('VoterPluginClass'))
+						{
+							$arg = array(
+								'item_id'=>$oActivity->id,
+								'user_id'=>$oActivity->user_id,
+								'type'=>'activity',
+								);
+							
+							$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
+							if($votes_str){
+							$votes = json_decode($votes_str);
+							$total_votes = $votes->total_votes;
+							$total_up = $votes->total_up;
+							$total_down = $votes->total_down;
+							$uplink = $votes->post_voter_links->up;
+							$downlink = $votes->post_voter_links->down;
+							}
+							if($_GET['userid']){
+								$user_id = $oActivity->user_id;
+								$secondary_item_id = $oActivity->id;
+								$type = 'activity';
+								$item_id = 0;
+								$component = 'buddypress';
+								$voteed_action = $wpdb->get_var("SELECT action FROM `".$table_prefix."ask_votes` WHERE user_id=\"$user_id\" AND item_id=\"$item_id\" AND component=\"$component\" AND type=\"$type\" AND secondary_item_id=\"$secondary_item_id\"");
+							}
+						}
+						
+						$oReturn->activities[$acounter]->vote->total_votes = $total_votes;
+						$oReturn->activities[$acounter]->vote->total_up = $total_up;
+						$oReturn->activities[$acounter]->vote->total_down = $total_down;
+						$oReturn->activities[$acounter]->vote->uplink = $uplink;
+						$oReturn->activities[$acounter]->vote->downlink = $downlink;
+						$oReturn->activities[$acounter]->vote->action = $voteed_action;
+						
+					
+						if($oActivity->children){
+							//children
+							$counter=0;
+							foreach($oActivity->children as $childoActivity){
+							$childuser = new BP_Core_User($childoActivity->user_id);
+							if($childuser && $childuser->avatar){
+								if($childuser->avatar_thumb){
+									preg_match_all('/(src)=("[^"]*")/i',$childuser->avatar_thumb, $user_avatar_result);
+									$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+									if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+									$childoActivity->avatar_thumb = $avatar_thumb;
+								}
+							}
+							$oReturn->activities[$acounter]->children->$counter->id = $childoActivity->id;
+							$oReturn->activities[$acounter]->children->$counter->item_id = $childoActivity->item_id;
+							$oReturn->activities[$acounter]->children->$counter->component = $childoActivity->component;
+							$oReturn->activities[$acounter]->children->$counter->user->id = (int)$childoActivity->user_id;
+							$oReturn->activities[$acounter]->children->$counter->user->username = $childoActivity->user_login;
+							$oReturn->activities[$acounter]->children->$counter->user->mail = $childoActivity->user_email;
+							$oReturn->activities[$acounter]->children->$counter->user->display_name = $childoActivity->display_name;
+							//$oReturn->activities[$acounter]->children->$counter->user->avatar_big = $childoActivity->avatar_big;
+							$oReturn->activities[$acounter]->children->$counter->user->avatar_thumb = $childoActivity->avatar_thumb;
+							$oReturn->activities[$acounter]->children->$counter->type = $childoActivity->type;
+							$oReturn->activities[$acounter]->children->$counter->time = $childoActivity->date_recorded;
+							$oReturn->activities[$acounter]->children->$counter->action = $childoActivity->action;
+							$oReturn->activities[$acounter]->children->$counter->content = stripcslashes($childoActivity->content);
+							$oReturn->activities[$acounter]->children->$counter->is_hidden = $childoActivity->hide_sitewide === "0" ? false : true;
+							$oReturn->activities[$acounter]->children->$counter->is_spam = $childoActivity->is_spam === "0" ? false : true;
+							$user = new BP_Core_User($childoActivity->user_id);
+							
+							$total_votes = $total_up = $total_down = 0;
+							$uplink = $downlink = '#';
+							$voteed_action = '';
+							if(class_exists('VoterPluginClass'))
+							{
+								$arg = array(
+									'item_id'=>$childoActivity->id,
+									'user_id'=>$childoActivity->user_id,
+									'type'=>'activity',
+									//'component'=>'buddypress',
+									);					
+								$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
+								$votes = json_decode($votes_str);
+								
+								$total_votes = $votes->total_votes;
+								$total_up = $votes->total_up;
+								$total_down = $votes->total_down;
+								$uplink = $votes->post_voter_links->up;
+								$downlink = $votes->post_voter_links->down;
+								
+								if($_GET['userid']){
+									$user_id = $childoActivity->user_id;
+									$secondary_item_id = $childoActivity->id;
+									$type = $childoActivity->type;
+									$item_id = 0;
+									$component = 'buddypress';
+									$voteed_action = $wpdb->get_var("SELECT action FROM `".$table_prefix."ask_votes` WHERE user_id=\"$user_id\" AND item_id=\"$item_id\" AND component=\"$component\" AND type=\"$type\" AND secondary_item_id=\"$secondary_item_id\"");
+									
+								}
+							}
+							
+							$oReturn->activities[$acounter]->children->$counter->vote->total_votes = $total_votes;
+							$oReturn->activities[$acounter]->children->$counter->vote->total_up = $total_up;
+							$oReturn->activities[$acounter]->children->$counter->vote->total_down = $total_down;
+							$oReturn->activities[$acounter]->children->$counter->vote->uplink = $uplink;
+							$oReturn->activities[$acounter]->children->$counter->vote->downlink = $downlink;
+							$oReturn->activities[$acounter]->children->$counter->vote->action = $voteed_action;
+							
+							$counter++;
+							}
+							
+						}
+						$acounter++;
+					}	
+				}
+				//echo '<pre>';
+				//print_r($oReturn);
+				//print_r($activityFinalArr);
+				//print_r($theActivityGroup);
+				
+				$oReturn->total_pages = ceil($aTempActivities['total']/$per_page);
+				$oReturn->total_count = $aTempActivities['total'];
+            } else {
+                return $this->error('activity');
+            }
+			
+			//echo '<pre>';print_r($oReturn);echo '</pre>';
+            return $oReturn;
+	}
 	/**
      * Returns an Array with all activities
      * @param int pages: number of pages to display (default unset)
@@ -992,7 +1588,7 @@ class JSON_API_BuddypressRead_Controller {
 			$aParams ['display_comments'] = true;
 			$aParams['in'] = array($parent_activity);
 			//$aTempActivities = bp_activity_get($aParams);
-		}else{		
+		}else{
 			if (!bp_has_activities())
 				return $this->error('activity');
 			if ($this->pages !== 1) {
@@ -1023,6 +1619,11 @@ class JSON_API_BuddypressRead_Controller {
 			$aParams['page']=$page;
 			$aParams['per_page']=$per_page;
 			$aParams['count_total']=$count_total;
+			
+			$activities = trim($_GET['activities']);
+			if($activities){
+				$aParams['in']=$activities;
+			}
 		}
 		
 		$aTempActivities = bp_activity_get($aParams);
@@ -1036,25 +1637,30 @@ class JSON_API_BuddypressRead_Controller {
 					}else{
 						$user = new BP_Core_User($oActivity->user_id);
 						if($user && $user->avatar){
-							if($user->avatar){
+							/*if($user->avatar){
 								preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
 								$oActivity->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
-							}
+							}*/
 							if($user->avatar_thumb){
 								preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
-								$oActivity->avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+								$thumb = str_replace('"','',$user_avatar_result[2][0]);
+								if($thumb && !strstr($thumb,'http:')){ $thumb = 'http:'.$thumb;}
+								$oActivity->avatar_thumb = $thumb;
 							}
 							//preg_match_all('/(src)=("[^"]*")/i',$user->avatar_mini, $user_avatar_result);
 							//$oActivity->avatar_mini = str_replace('"','',$user_avatar_result[2][0]);
 						}
+						
 						$oReturn->activities[$acounter]->id = $oActivity->id;
 						$oReturn->activities[$acounter]->component = $oActivity->component;
 						$oReturn->activities[$acounter]->user->id = $oActivity->user_id;
 						$oReturn->activities[$acounter]->user->username = $oActivity->user_login;
 						$oReturn->activities[$acounter]->user->mail = $oActivity->user_email;
 						$oReturn->activities[$acounter]->user->display_name = $oActivity->user_fullname;
-						$oReturn->activities[$acounter]->user->avatar_big = $oActivity->avatar_big;
+						//$oReturn->activities[$acounter]->user->avatar_big = $oActivity->avatar_big;
 						$oReturn->activities[$acounter]->user->avatar_thumb = $oActivity->avatar_thumb;
+						$oReturn->activities[$acounter]->item_id = $oActivity->item_id;
+						$oReturn->activities[$acounter]->secondary_item_id = $oActivity->secondary_item_id;
 						$oReturn->activities[$acounter]->type = $oActivity->type;
 						$oReturn->activities[$acounter]->time = $oActivity->date_recorded;
 						
@@ -1071,7 +1677,7 @@ class JSON_API_BuddypressRead_Controller {
 						if(strlen($oActivity->content)>10){
 							$oActivity->content = do_shortcode($oActivity->content);
 						}
-						$oReturn->activities[$acounter]->content = $oActivity->content;
+						$oReturn->activities[$acounter]->content = stripcslashes($oActivity->content);
 						$oReturn->activities[$acounter]->is_hidden = $oActivity->hide_sitewide === "0" ? false : true;
 						$oReturn->activities[$acounter]->is_spam = $oActivity->is_spam === "0" ? false : true;
 						
@@ -1119,28 +1725,30 @@ class JSON_API_BuddypressRead_Controller {
 							foreach($oActivity->children as $childoActivity){
 							$childuser = new BP_Core_User($childoActivity->user_id);
 							if($childuser && $childuser->avatar){
-								if($childuser->avatar){
+								/*if($childuser->avatar){
 									preg_match_all('/(src)=("[^"]*")/i',$childuser->avatar, $user_avatar_result);
 									$childoActivity->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
-								}
+								}*/
 								if($childuser->avatar_thumb){
 									preg_match_all('/(src)=("[^"]*")/i',$childuser->avatar_thumb, $user_avatar_result);
-									$childoActivity->avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+									$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+									if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+									$childoActivity->avatar_thumb = $avatar_thumb;
 								}
 							}
 							$oReturn->activities[$acounter]->children->$counter->id = $childoActivity->id;
 							$oReturn->activities[$acounter]->children->$counter->item_id = $childoActivity->item_id;
 							$oReturn->activities[$acounter]->children->$counter->component = $childoActivity->component;
-							$oReturn->activities[$acounter]->children->$counter->user->id = $childoActivity->user_id;
+							$oReturn->activities[$acounter]->children->$counter->user->id = (int)$childoActivity->user_id;
 							$oReturn->activities[$acounter]->children->$counter->user->username = $childoActivity->user_login;
 							$oReturn->activities[$acounter]->children->$counter->user->mail = $childoActivity->user_email;
 							$oReturn->activities[$acounter]->children->$counter->user->display_name = $childoActivity->display_name;
-							$oReturn->activities[$acounter]->children->$counter->user->avatar_big = $childoActivity->avatar_big;
+							//$oReturn->activities[$acounter]->children->$counter->user->avatar_big = $childoActivity->avatar_big;
 							$oReturn->activities[$acounter]->children->$counter->user->avatar_thumb = $childoActivity->avatar_thumb;
 							$oReturn->activities[$acounter]->children->$counter->type = $childoActivity->type;
 							$oReturn->activities[$acounter]->children->$counter->time = $childoActivity->date_recorded;
 							$oReturn->activities[$acounter]->children->$counter->action = $childoActivity->action;
-							$oReturn->activities[$acounter]->children->$counter->content = $childoActivity->content;
+							$oReturn->activities[$acounter]->children->$counter->content = stripcslashes($childoActivity->content);
 							$oReturn->activities[$acounter]->children->$counter->is_hidden = $childoActivity->hide_sitewide === "0" ? false : true;
 							$oReturn->activities[$acounter]->children->$counter->is_spam = $childoActivity->is_spam === "0" ? false : true;
 							$user = new BP_Core_User($childoActivity->user_id);
@@ -1280,15 +1888,18 @@ class JSON_API_BuddypressRead_Controller {
 				$avatar_mini = $user->avatar_mini;
 				preg_match_all('/(src)=("[^"]*")/i',$user_avatar, $user_avatar_result);
 				$user_avatar_src = str_replace('"','',$user_avatar_result[2][0]);
+				if($user_avatar_src && !strstr($user_avatar_src,'http:')){ $user_avatar_src = 'http:'.$user_avatar_src;}
 				preg_match_all('/(src)=("[^"]*")/i',$avatar_mini, $avatar_mini_result);
 				$avatar_mini_src = str_replace('"','',$avatar_mini_result[2][0]);
+				if($avatar_mini_src && !strstr($avatar_mini_src,'http:')){ $avatar_mini_src = 'http:'.$avatar_mini_src;}
 				preg_match_all('/(src)=("[^"]*")/i',$avatar_thumb, $avatar_thumb_result);
 				$avatar_thumb_src = str_replace('"','',$avatar_thumb_result[2][0]);
+				if($avatar_thumb_src && !strstr($avatar_thumb_src,'http:')){ $avatar_thumb_src = 'http:'.$avatar_thumb_src;}
 				
 				$bbp_cover_pic = get_user_meta( $userid, 'bbp_cover_pic',true);
 				if(!$bbp_cover_pic){$bbp_cover_pic=$user_avatar_src;}
 				$oReturn->profilefields->photo->avatar = $bbp_cover_pic;
-				$oReturn->profilefields->photo->avatar_big = $user_avatar_src;
+				$oReturn->profilefields->photo->avatar_big = $bbp_cover_pic;
 				$oReturn->profilefields->photo->avatar_thumb = $avatar_thumb_src;
 				$oReturn->profilefields->photo->avatar_mini = $avatar_mini_src;
 				$oReturn->profilefields->user->username = $user->profile_data['user_login'];
@@ -1422,7 +2033,10 @@ class JSON_API_BuddypressRead_Controller {
 			while(bp_thread_messages()){
 				bp_thread_the_message();
 				preg_match_all('/(src)=("[^"]*")/i',bp_get_the_thread_message_sender_avatar_thumb(), $user_avatar_result);
-				$oReturn->message->threads[$counter]->avatar = str_replace('"','',$user_avatar_result[2][0]);
+				
+				$avatar = str_replace('"','',$user_avatar_result[2][0]);
+				if($avatar && !strstr($avatar,'http:')){ $avatar = 'http:'.$avatar;}				
+				$oReturn->message->threads[$counter]->avatar = $avatar;
 				$oReturn->message->threads[$counter]->sender_id = bp_get_the_thread_message_sender_id();
 				$oReturn->message->threads[$counter]->sender_name = bp_get_the_thread_message_sender_name();
 				$oReturn->message->threads[$counter]->time_since = bp_get_the_thread_message_time_since();
@@ -1471,16 +2085,76 @@ class JSON_API_BuddypressRead_Controller {
 		
 		if(!$_GET['userid']){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
 		
-		$aNotifications = bp_core_get_notifications_for_user($_GET['userid']);
+		$aNotifications = bp_core_get_notifications_for_user($_GET['userid'],'object');
 		
-        if (empty($aNotifications)) {
+		if (empty($aNotifications)) {
             return $this->error('notifications');
         }
-
+		
+		$counter = 0;
+		$userDataArr = array();
         foreach ($aNotifications as $sNotificationMessage) {
-            $oReturn->notifications [] = $sNotificationMessage;
+            $oReturn->notifications[$counter]->id = $sNotificationMessage->id;
+			$oReturn->notifications[$counter]->item_id = $sNotificationMessage->item_id;
+			$oReturn->notifications[$counter]->secondary_item_id = $sNotificationMessage->secondary_item_id;
+			$oReturn->notifications[$counter]->content = $sNotificationMessage->content;
+			$oReturn->notifications[$counter]->component_name = $sNotificationMessage->component_name;
+			$oReturn->notifications[$counter]->component_action = $sNotificationMessage->component_action;
+			$oReturn->notifications[$counter]->date_notified = $sNotificationMessage->date_notified;
+			
+			$userid = 0;
+			$avatar_thumb_default = 'img/thumb_default.png';
+			$activity_thumb = 'img/activity.png';
+			$messages_thumb = 'img/messages.png';
+			$vote_thumb = 'img/vote.png';
+			$friend_thumb = 'img/friend.png';
+			
+			$avatar_thumb = '';
+			if($sNotificationMessage->component_name=='follow' || $sNotificationMessage->component_name=='friends'){
+				$userid = intval($sNotificationMessage->item_id);
+				$avatar_thumb = $friend_thumb;
+			}elseif($sNotificationMessage->component_name=='votes'){
+				$component_action = $sNotificationMessage->component_action;
+				$component_action_arr = explode('-+',$component_action);
+				if(count($component_action_arr)<=1){
+					$component_action_arr = explode('_',$component_action);	
+				}
+				$type = $component_action_arr[0];
+				$userid = intval($component_action_arr[1]);
+				$avatar_thumb = $vote_thumb;
+			}elseif($sNotificationMessage->component_name=='activity'){
+				$oReturn->notifications[$counter]->user->avatar_thumb = $activity_thumb;
+			}elseif($sNotificationMessage->component_name=='messages'){
+				$oReturn->notifications[$counter]->user->avatar_thumb = $messages_thumb;
+			}
+			
+			if($userid && $userid>0){
+				if($userDataArr && $userDataArr[$userid]){
+					$user = $userDataArr[$userid];
+				}else{
+					$user = new BP_Core_User($userid);
+					$userDataArr[$userid] = $user;
+				}
+				if($user){
+					if($user->avatar_thumb){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+						if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}							
+					}
+					if(!$avatar_thumb){$avatar_thumb=$avatar_thumb_default;}
+					$oReturn->notifications[$counter]->user->id = $user->id;
+					$oReturn->notifications[$counter]->user->fullname = $user->fullname;
+					$oReturn->notifications[$counter]->user->last_active = $user->last_active;
+					$oReturn->notifications[$counter]->user->email = $user->email;
+					$oReturn->notifications[$counter]->user->avatar_thumb = $avatar_thumb;
+				}
+			}
+			$counter++;
         }
-        $oReturn->count = count($aNotifications);
+		//echo '<pre>';
+		//print_r($aNotifications);
+		//print_r($oReturn);exit;
+        $oReturn->count = $counter;
 
         return $oReturn;
     }
@@ -1580,7 +2254,15 @@ class JSON_API_BuddypressRead_Controller {
 		$this->init('forums');
 		$oReturn = new stdClass();
 		
-		$group_id = $_GET['groupId'];
+		global $wpdb,$table_prefix;
+		if($_GET['groupId']){
+			$group_id = $_GET['groupId'];
+		}elseif($_GET['groupSlug']){
+			$groupSlug = $_GET['groupSlug'];
+			$group = $wpdb->get_row("select id from ".$table_prefix."bp_groups where slug=\"$groupSlug\"");
+			$group_id = $group->id;
+		}
+		
 		if(!$group_id){ $oReturn->error = __('Wrong group id.','aheadzen'); return $oReturn;}
 		$aGroup = groups_get_group( array( 'group_id' => $group_id ) );
 		if($aGroup){
@@ -1591,7 +2273,8 @@ class JSON_API_BuddypressRead_Controller {
            
 			$oUser = get_user_by('id', $aGroup->creator_id);
 			$useravatar_url = bp_core_fetch_avatar(array('object'=>'user','item_id'=>$aGroup->creator_id, 'html'=>false, 'type'=>'full'));
-            $oReturn->groupfields->creator->userid = $aGroup->creator_id;
+            if($useravatar_url && !strstr($useravatar_url,'http:')){ $useravatar_url = 'http:'.$useravatar_url;}
+			$oReturn->groupfields->creator->userid = $aGroup->creator_id;
 			$oReturn->groupfields->creator->username = $oUser->data->user_login;
             $oReturn->groupfields->creator->mail = $oUser->data->user_email;
             $oReturn->groupfields->creator->display_name = $oUser->data->display_name;
@@ -1602,21 +2285,23 @@ class JSON_API_BuddypressRead_Controller {
             $oReturn->groupfields->count_member = $aGroup->total_member_count;
 			
 			$avatar_url = bp_core_fetch_avatar(array('object'=>'group','item_id'=>$aGroup->id, 'html'=>false, 'type'=>'full'));
+			if($avatar_url && !strstr($avatar_url,'http:')){ $avatar_url = 'http:'.$avatar_url;}
 			$oReturn->groupfields->avatar = $avatar_url;
 			
-			$iForumId = groups_get_groupmeta($aGroup->id, 'forum_id');
-			if(is_array($iForumId)){
-				$iForumId = $iForumId[0];
-			}
-			if($iForumId){
-				$oForum = bp_forums_get_forum((int) $iForumId);
-				if($oForum){
-					$oReturn->groupfields->forum->id = $oForum->forum_id;
-					$oReturn->groupfields->forum->name = $oForum->forum_name;
-					$oReturn->groupfields->forum->slug = $oForum->forum_slug;
-					$oReturn->groupfields->forum->description = $oForum->forum_desc;
-					$oReturn->groupfields->forum->topics_count = (int) $oForum->topics;
-					$oReturn->groupfields->forum->post_count = (int) $oForum->posts;
+			if($iForumId = groups_get_groupmeta($aGroup->id, 'forum_id')){
+				if(is_array($iForumId)){
+					$iForumId = $iForumId[0];
+				}
+				if($iForumId){
+					$oForum = bp_forums_get_forum((int) $iForumId);
+					if($oForum){
+						$oReturn->groupfields->forum->id = $oForum->forum_id;
+						$oReturn->groupfields->forum->name = $oForum->forum_name;
+						$oReturn->groupfields->forum->slug = $oForum->forum_slug;
+						$oReturn->groupfields->forum->description = $oForum->forum_desc;
+						$oReturn->groupfields->forum->topics_count = (int) $oForum->topics;
+						$oReturn->groupfields->forum->post_count = (int) $oForum->posts;
+					}
 				}
 			}
 		}
@@ -1638,6 +2323,62 @@ class JSON_API_BuddypressRead_Controller {
 			foreach($aGroups['groups'] as $grpObj){
 				$oReturn->group[$counter]->id = $grpObj->id;
 				$oReturn->group[$counter]->name = $grpObj->name;
+				$counter++;	
+			}
+		}else{
+			$oReturn->error = __('No data available.','aheadzen');
+		}
+		return $oReturn;
+	}
+	
+	public function groups_join_unjoin_group() {
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';		
+		$user_id = $_GET['userid'];
+		$groupid = $_GET['groupid'];
+		$actionType = $_GET['actionType'];
+		if(!$user_id){ $oReturn->error = __('Wrong User id.','aheadzen'); return $oReturn;}
+		if(!$groupid){ $oReturn->error = __('Wrong Group id.','aheadzen'); return $oReturn;}
+		
+		if($actionType=='leave_group'){
+			$member = new BP_Groups_Member( $user_id, $groupid );
+			do_action( 'groups_remove_member', $groupid, $user_id );
+			if ($member->remove()) {
+				$oReturn->success->msg = __('Group Left Successfully.','aheadzen');
+				$oReturn->success->group_id = $groupid;
+				$oReturn->success->user_id = $user_id;
+			} else {
+				$oReturn->error = __('Group Unjoin Error.','aheadzen');
+			}
+		}else{
+			if ( ! groups_join_group( $groupid, $user_id ) ) {
+				$oReturn->error = __('Group Join Error.','aheadzen');
+			} else {
+				$oReturn->success->msg = __('Group Join Successfully.','aheadzen');
+				$oReturn->success->group_id = $groupid;
+				$oReturn->success->user_id = $user_id;
+			}
+		}		
+		
+		return $oReturn;
+	}
+	
+	public function user_get_groups() {
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';		
+		$user_id = $_GET['userid'];
+		if(!$user_id){ $oReturn->error = __('Wrong user id.','aheadzen'); return $oReturn;}
+		global $wpdb, $table_prefix;
+		$res = $wpdb->get_results("select group_id,date_modified from ".$table_prefix."bp_groups_members where user_id=\"$user_id\" and is_confirmed=1 order by group_id asc");
+		$counter=0;
+		if($res){
+			foreach($res as $resObj){
+				$oReturn->memberGroups[$counter]->id = $resObj->group_id;
+				$oReturn->memberGroups[$counter]->date_modified = $resObj->date_modified;
 				$counter++;	
 			}
 		}else{
@@ -1669,7 +2410,17 @@ class JSON_API_BuddypressRead_Controller {
         $aParams ['type'] = $this->type;
         $aParams ['page'] = $this->page;
         $aParams ['per_page'] = $this->per_page;
-		
+		$aParams ['order'] = 'ASC';
+		$aParams ['orderby'] = 'last_activity';
+		if($_GET['keyword']){
+			$keyword = trim($_GET['keyword']);
+			global $wpdb,$table_prefix;
+			$groupIDs = $wpdb->get_col("select id from ".$table_prefix."bp_groups where name like \"$keyword%\"");
+			$aParams['include'] = 'abc';
+			if($groupIDs){
+				$aParams['include'] = $groupIDs;
+			}
+		}
 		$aGroups = groups_get_groups($aParams);
 		
 		if ($aGroups['total'] == "0")
@@ -1685,6 +2436,7 @@ class JSON_API_BuddypressRead_Controller {
                 continue;
             $oUser = get_user_by('id', $aGroup->creator_id);
 			$useravatar_url = bp_core_fetch_avatar(array('object'=>'user','item_id'=>$aGroup->creator_id, 'html'=>false, 'type'=>'full'));
+			if($useravatar_url && !strstr($useravatar_url,'http:')){ $useravatar_url = 'http:'.$useravatar_url;}
             $oReturn->groups[$counter]->creator->userid = $aGroup->creator_id;
 			$oReturn->groups[$counter]->creator->username = $oUser->data->user_login;
             $oReturn->groups[$counter]->creator->mail = $oUser->data->user_email;
@@ -1696,6 +2448,7 @@ class JSON_API_BuddypressRead_Controller {
             $oReturn->groups[$counter]->count_member = $aGroup->total_member_count;
 			
 			$avatar_url = bp_core_fetch_avatar(array('object'=>'group','item_id'=>$aGroup->id, 'html'=>false, 'type'=>'full'));
+			if($avatar_url && !strstr($avatar_url,'http:')){ $avatar_url = 'http:'.$avatar_url;}
 			$oReturn->groups[$counter]->avatar = $avatar_url;
 			
 			$iForumId = groups_get_groupmeta($aGroup->id, 'forum_id');
@@ -1713,12 +2466,25 @@ class JSON_API_BuddypressRead_Controller {
 					$oReturn->groups[$counter]->forum->post_count = (int) $oForum->posts;
 				}
 			}
+			
+			$isGroupAdmin = $isMember = $isBanned = 0;
+			if($_GET['currentUser']){
+				if($aGroup->creator_id==$_GET['currentUser']){					
+					$isGroupAdmin = 1;
+				}
+				$isMember = groups_is_user_member($_GET['currentUser'],$aGroup->id);
+				$isBanned = groups_is_user_banned($_GET['currentUser'],$aGroup->id);
+			}
+			$oReturn->groups[$counter]->is_admin = $isGroupAdmin;
+			$oReturn->groups[$counter]->is_member = $isMember;
+			$oReturn->groups[$counter]->is_banned = $isBanned;
+			
+			
 			$counter++;
         }
 		
 		$oReturn->count = count($aGroups['groups']);
-
-        return $oReturn;
+		return $oReturn;
     }
 
     /**
@@ -1878,6 +2644,7 @@ class JSON_API_BuddypressRead_Controller {
 				$oReturn->group_members[$counter]->last_activity = $aMember->last_activity;
 				$oReturn->group_members[$counter]->friend_count = $aMember->total_friend_count;
 				$avatar_url = bp_core_fetch_avatar(array('object'=>'user','item_id'=>$aMember->user_id, 'html'=>false, 'type'=>'full'));
+				if($avatar_url && !strstr($avatar_url,'http:')){ $avatar_url = 'http:'.$avatar_url;}
 				$oReturn->group_members[$counter]->avatar = $avatar_url;
 				
 				if(function_exists('bp_follow_total_follow_counts')){
@@ -1995,22 +2762,44 @@ class JSON_API_BuddypressRead_Controller {
             $oReturn->topics[(int) $aTopic->topic_id]->title = $aTopic->topic_title;
             $oReturn->topics[(int) $aTopic->topic_id]->slug = $aTopic->topic_slug;
             $oUser = get_user_by('id', $aTopic->topic_poster);
-            $oReturn->topics[(int) $aTopic->topic_id]->poster[(int) $oUser->data->ID]->username = $oUser->data->user_login;
-            $oReturn->topics[(int) $aTopic->topic_id]->poster[(int) $oUser->data->ID]->mail = $oUser->data->user_email;
-            $oReturn->topics[(int) $aTopic->topic_id]->poster[(int) $oUser->data->ID]->display_name = $oUser->data->display_name;
+            $oReturn->topics[(int) $aTopic->topic_id]->poster->ID = $oUser->data->ID;
+			$oReturn->topics[(int) $aTopic->topic_id]->poster->username = $oUser->data->user_login;
+            $oReturn->topics[(int) $aTopic->topic_id]->poster->mail = $oUser->data->user_email;
+            $oReturn->topics[(int) $aTopic->topic_id]->poster->display_name = $oUser->data->display_name;
             $oReturn->topics[(int) $aTopic->topic_id]->post_count = (int) $aTopic->topic_posts;
-            if ($this->detailed === true) {
+            
+			$user = new BP_Core_User($oTopic->topic_last_poster);
+			if($user && $user->avatar){
+				if($user->avatar_thumb){
+					preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+					$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+					if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+					$oReturn->topics[(int) $aTopic->topic_id]->poster->avatar = $avatar_thumb;
+				}
+			}
+			if ($this->detailed === true) {
                 $oTopic = bp_forums_get_topic_details($aTopic->topic_id);
-
-                $oUser = get_user_by('id', $oTopic->topic_last_poster);
-                $oReturn->topics[(int) $aTopic->topic_id]->last_poster[(int) $oTopic->topic_last_poster]->username = $oUser->data->user_login;
-                $oReturn->topics[(int) $aTopic->topic_id]->last_poster[(int) $oTopic->topic_last_poster]->mail = $oUser->data->user_email;
-                $oReturn->topics[(int) $aTopic->topic_id]->last_poster[(int) $oTopic->topic_last_poster]->display_name = $oUser->data->display_name;
+				
+				$oUser = get_user_by('id', $oTopic->topic_last_poster);
+                $oReturn->topics[(int) $aTopic->topic_id]->last_poster->ID = $oTopic->topic_last_poster;
+				$oReturn->topics[(int) $aTopic->topic_id]->last_poster->username = $oUser->data->user_login;
+                $oReturn->topics[(int) $aTopic->topic_id]->last_poster->mail = $oUser->data->user_email;
+                $oReturn->topics[(int) $aTopic->topic_id]->last_poster->display_name = $oUser->data->display_name;
                 $oReturn->topics[(int) $aTopic->topic_id]->start_time = $oTopic->topic_start_time;
                 $oReturn->topics[(int) $aTopic->topic_id]->forum_id = (int) $oTopic->forum_id;
                 $oReturn->topics[(int) $aTopic->topic_id]->topic_status = $oTopic->topic_status;
                 $oReturn->topics[(int) $aTopic->topic_id]->is_open = (int) $oTopic->topic_open === 1 ? true : false;
                 $oReturn->topics[(int) $aTopic->topic_id]->is_sticky = (int) $oTopic->topic_sticky === 1 ? true : false;
+				
+				$user = new BP_Core_User($oTopic->topic_last_poster);
+				if($user && $user->avatar){
+					if($user->avatar_thumb){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+						if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+						$oReturn->topics[(int) $aTopic->topic_id]->last_poster->avatar = $avatar_thumb;
+					}
+				}
             }
         }
         $oReturn->count = count($aTopics);
@@ -2047,9 +2836,10 @@ class JSON_API_BuddypressRead_Controller {
         foreach ($aPosts as $oPost) {
             $oReturn->posts[(int) $oPost->post_id]->topicid = (int) $oPost->topic_id;
             $oUser = get_user_by('id', (int) $oPost->poster_id);
-            $oReturn->posts[(int) $oPost->post_id]->poster[(int) $oPost->poster_id]->username = $oUser->data->user_login;
-            $oReturn->posts[(int) $oPost->post_id]->poster[(int) $oPost->poster_id]->mail = $oUser->data->user_email;
-            $oReturn->posts[(int) $oPost->post_id]->poster[(int) $oPost->poster_id]->display_name = $oUser->data->display_name;
+            $oReturn->posts[(int) $oPost->post_id]->poster->poster_id = $oPost->poster_id;
+			$oReturn->posts[(int) $oPost->post_id]->poster->username = $oUser->data->user_login;
+            $oReturn->posts[(int) $oPost->post_id]->poster->mail = $oUser->data->user_email;
+            $oReturn->posts[(int) $oPost->post_id]->poster->display_name = $oUser->data->display_name;
             $oReturn->posts[(int) $oPost->post_id]->post_text = $oPost->post_text;
             $oReturn->posts[(int) $oPost->post_id]->post_time = $oPost->post_time;
             $oReturn->posts[(int) $oPost->post_id]->post_position = (int) $oPost->post_position;
@@ -2265,7 +3055,136 @@ class JSON_API_BuddypressRead_Controller {
 
         return $oReturn;
     }
-
+	
+	/************************************************
+	Follwers
+	************************************************/
+	 public function user_followers_users() {		
+		
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_GET['userid']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
+		
+		$args = array('user_id' => $_GET['userid']);
+		$followers = bp_follow_get_followers($args);
+		if($_GET['getdata']=='ids'){
+			$oReturn->followers = $followers;
+			return  $oReturn;
+		}else if($followers){
+			$counter=0;
+			for($f=0;$f<count($followers);$f++){
+				$user = new BP_Core_User($followers[$f]);				
+				if($user){
+					$username = $avatar_big = $avatar_thumb = '';
+					if($user->user_url){
+						$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
+					}
+					if($user->avatar){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+						$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+						if($avatar_big && !strstr($avatar_big,'http:')){ $avatar_big = 'http:'.$avatar_big;}
+					}
+					if($user->avatar_thumb){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+						if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+					}					
+					$oReturn->members[$counter]->id 		= $user->id;
+					$oReturn->members[$counter]->username 	= $username;
+					$oReturn->members[$counter]->fullname 	= $user->fullname;
+					$oReturn->members[$counter]->email 		= $user->email;
+					$oReturn->members[$counter]->last_active= $user->last_active;
+					$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
+					
+					$profile_data = $user->profile_data;
+					if($profile_data){
+						foreach($profile_data as $sFieldName => $val){
+							if(is_array($val)){
+								$oReturn->members[$counter]->$sFieldName = $val['field_data'];
+							}
+						}
+					}
+					if(function_exists('bp_follow_total_follow_counts')){
+						$oReturn->members[$counter]->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' => $user->id ) );
+					}
+					$oReturn->members[$counter]->is_following = 0;
+					if(function_exists('bp_follow_is_following') && bp_follow_is_following(array('leader_id'=>$user->id,'follower_id'=>$_GET['userid']))){
+						$oReturn->members[$counter]->is_following = 1;
+					}
+					$counter++;
+				}
+			}
+		}
+		
+		return  $oReturn;
+	}
+	
+	/************************************************
+	Follwings
+	************************************************/
+	 public function user_followings_users() {		
+		
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_GET['userid']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
+		$args = array('user_id' => $_GET['userid']);
+		$followings = bp_follow_get_following($args);
+		if($_GET['getdata']=='ids'){
+			$oReturn->followings = $followings;
+			return  $oReturn;
+		}else if($followings){
+			$counter=0;
+			for($f=0;$f<count($followings);$f++){
+				$user = new BP_Core_User($followings[$f]);				
+				if($user){
+					$username = $avatar_big = $avatar_thumb = '';
+					if($user->user_url){
+						$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
+					}
+					if($user->avatar){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+						$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+						if($avatar_big && !strstr($avatar_big,'http:')){ $avatar_big = 'http:'.$avatar_big;}
+					}
+					if($user->avatar_thumb){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+						if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+					}					
+					$oReturn->members[$counter]->id 		= $user->id;
+					$oReturn->members[$counter]->username 	= $username;
+					$oReturn->members[$counter]->fullname 	= $user->fullname;
+					$oReturn->members[$counter]->email 		= $user->email;
+					$oReturn->members[$counter]->last_active= $user->last_active;
+					$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
+					
+					$profile_data = $user->profile_data;
+					if($profile_data){
+						foreach($profile_data as $sFieldName => $val){
+							if(is_array($val)){
+								$oReturn->members[$counter]->$sFieldName = $val['field_data'];
+							}
+						}
+					}
+					if(function_exists('bp_follow_total_follow_counts')){
+						$oReturn->members[$counter]->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' => $user->id ) );
+					}
+					$oReturn->members[$counter]->is_following = 0;
+					if(function_exists('bp_follow_is_following') && bp_follow_is_following(array('leader_id'=>$user->id,'follower_id'=>$_GET['userid']))){
+						$oReturn->members[$counter]->is_following = 1;
+					}
+					$counter++;
+				}
+			}
+		}
+		
+		return  $oReturn;
+	}
+	
     public function __call($sName, $aArguments) {
         if (class_exists("BUDDYPRESS_JSON_API_FUNCTION") &&
                 method_exists(BUDDYPRESS_JSON_API_FUNCTION, $sName) &&
