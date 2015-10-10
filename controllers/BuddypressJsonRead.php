@@ -1313,12 +1313,14 @@ class JSON_API_BuddypressRead_Controller {
 		$theActivityGroup = array();
 		if (!empty($aTempActivities['activities'])) {
 				$acounter=0;
-                foreach ($aTempActivities['activities'] as $oActivity) {					
-					if(($oActivity->component=='xprofile' && $oActivity->type=='updated_profile') || $oActivity->component=='profile' && $oActivity->type=='new_avatar'){
-						$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][0] = $oActivity;
-					}else{
-						$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][] = $oActivity;
-					}					
+                foreach ($aTempActivities['activities'] as $oActivity) {
+					if($oActivity->component=='votes'){ }else{
+						if(($oActivity->component=='xprofile' && $oActivity->type=='updated_profile') || $oActivity->component=='profile' && $oActivity->type=='new_avatar'){
+							$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][0] = $oActivity;
+						}else{
+							$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][] = $oActivity;
+						}
+					}
 				}
 				$activityFinalArr = array();
 				if($theActivityGroup){
@@ -1329,22 +1331,35 @@ class JSON_API_BuddypressRead_Controller {
 								$varGrpName = '';
 								$spliterStr = '';
 								$multiActivity = 0;
+								$newMembersArr = array();
 								if(count($activityUerArr)>1){
 									for($i=0;$i<count($activityUerArr);$i++){
 										$theAct = array();
 										$theAct = $activityUerArr[$i];
 										if($theAct->component=='groups' && $theAct->type=='joined_group'){
 											$spliterStr = 'joined the group';											
-										}else if($oActivity->component=='birth_chart' && $oActivity->type=='save_chart'){
+										}else if($theAct->component=='birth_chart' && $theAct->type=='save_chart'){
 											$spliterStr = 'just received';											
-										}else if($oActivity->component=='members' && $oActivity->type=='new_member'){
-											$spliterStr = 'became a registered member';											
+										}else if($theAct->component=='members' && $theAct->type=='new_member'){
+											$spliterStr = 'became a registered member';
+											$spliterStr2 = 'just registered.';
+											$newMembersArr[] = $theAct->user_id;
 										}
 										if($spliterStr){
-											$joinGroup = explode($spliterStr,$theAct->action);
-											$theStrArr[] = trim($joinGroup[0]);
-											$varGrpName = trim($joinGroup[1]);
+											$expActionArr = explode($spliterStr,$theAct->action);
+											$theStrArr[] = trim($expActionArr[0]);
+											$varGrpName = trim($expActionArr[1]);
 											$multiActivity=1;
+										}
+										if($i==2){
+											$others = (count($activityUerArr)-3);
+											if($spliterStr2){$spliterStr = $spliterStr2;}
+											if($others>1){
+												$spliterStr = 'and '.$others.' others ' . $spliterStr;
+											}else{
+												$spliterStr = 'and '.$others.' other '. $spliterStr;
+											}
+											break;
 										}
 									}
 									$theActivityVar = $activityUerArr[0];
@@ -1366,7 +1381,29 @@ class JSON_API_BuddypressRead_Controller {
 									}
 									$avatar_url = bp_core_fetch_avatar(array('object'=>'group','item_id'=>$theActivityVar->item_id, 'html'=>false, 'type'=>'full'));
 									if($avatar_url && !strstr($avatar_url,'http:')){ $avatar_url = 'http:'.$avatar_url;}
-									$theActivityVar->content = '<a href="'.$Gpermalink.'"><img src="'.$avatar_url.'" alt="'.$Gname.'" class="full-image" style="max-width:250px;"></a>';									
+									$theActivityVar->content = '<a href="'.$Gpermalink.'"><img src="'.$avatar_url.'" alt="'.$Gname.'" class="full-image" style="max-width:250px;height:auto;"></a>';									
+								}else if($theActivityVar->component=='birth_chart' && $theActivityVar->type=='save_chart'){
+									$post_thumbnail = get_the_post_thumbnail(4089,'post-thumbnail',array( 'class' => 'full-image', 'style' => 'max-width:250px;height:auto;'));
+									if($post_thumbnail){
+										$theActivityVar->content = $post_thumbnail;
+									}
+								}else if($theActivityVar->component=='members' && $theActivityVar->type=='new_member'){
+									$contentStr =  '<div class="row activityJoinUsers">';
+									if($newMembersArr){
+										for($m=0;$m<count($newMembersArr);$m++){
+											$user = new BP_Core_User($newMembersArr[$m]);
+											
+											if($user && $user->avatar){
+												$avatar_thumb = $user->avatar_thumb;
+												preg_match_all('/(src)=("[^"]*")/i',$avatar_thumb, $avatar_thumb_result);
+												$avatar_thumb_src = str_replace('"','',$avatar_thumb_result[2][0]);
+												if($avatar_thumb_src && !strstr($avatar_thumb_src,'http:')){ $avatar_thumb_src = 'http:'.$avatar_thumb_src;}
+												$contentStr .= '<div class="col col-30"><img src="'.$avatar_thumb_src.'" alt=""></div>';
+											}
+										}
+									}
+									$contentStr .= '</div>';
+									$theActivityVar->content = $contentStr;
 								}
 								$activityFinalArr[]=$theActivityVar;
 							}
@@ -1612,13 +1649,13 @@ class JSON_API_BuddypressRead_Controller {
 			$page = $_GET['thepage'];
 			if(!$page){$page=1;}
 			$per_page = $_GET['per_page'];
-			if(!$per_page){$per_page=10;}
+			if(!$per_page){$per_page=50;}
 			$count_total = $_GET['count_total'];
 			if(!$count_total){$count_total=100;}
 			
 			$aParams['page']=$page;
 			$aParams['per_page']=$per_page;
-			$aParams['count_total']=$count_total;
+			$aParams['count_total']=$count_total;			
 			
 			$activities = trim($_GET['activities']);
 			if($activities){
