@@ -370,3 +370,6 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 
 =1.0.36 =
 * activity api - Grouping the activity.
+
+=1.0.37 =
+* activity api - Grouping the activity change.

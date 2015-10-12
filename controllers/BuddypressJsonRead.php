@@ -1332,6 +1332,7 @@ class JSON_API_BuddypressRead_Controller {
 								$spliterStr = '';
 								$multiActivity = 0;
 								$newMembersArr = array();
+								$spliterStr2 = '';
 								if(count($activityUerArr)>1){
 									for($i=0;$i<count($activityUerArr);$i++){
 										$theAct = array();
@@ -1383,7 +1384,7 @@ class JSON_API_BuddypressRead_Controller {
 									if($avatar_url && !strstr($avatar_url,'http:')){ $avatar_url = 'http:'.$avatar_url;}
 									$theActivityVar->content = '<a href="'.$Gpermalink.'"><img src="'.$avatar_url.'" alt="'.$Gname.'" class="full-image" style="max-width:250px;height:auto;"></a>';									
 								}else if($theActivityVar->component=='birth_chart' && $theActivityVar->type=='save_chart'){
-									$post_thumbnail = get_the_post_thumbnail(4089,'post-thumbnail',array( 'class' => 'full-image', 'style' => 'max-width:250px;height:auto;'));
+									$post_thumbnail = get_the_post_thumbnail(4089,'medium',array( 'class' => 'full-image', 'style' => 'max-width:250px;height:auto;'));
 									if($post_thumbnail){
 										$theActivityVar->content = $post_thumbnail;
 									}
@@ -1398,7 +1399,7 @@ class JSON_API_BuddypressRead_Controller {
 												preg_match_all('/(src)=("[^"]*")/i',$avatar_thumb, $avatar_thumb_result);
 												$avatar_thumb_src = str_replace('"','',$avatar_thumb_result[2][0]);
 												if($avatar_thumb_src && !strstr($avatar_thumb_src,'http:')){ $avatar_thumb_src = 'http:'.$avatar_thumb_src;}
-												$contentStr .= '<div class="col col-30"><img src="'.$avatar_thumb_src.'" alt=""></div>';
+												$contentStr .= '<div class="col col-30"><a href="'.$user->user_url.'"><img src="'.$avatar_thumb_src.'" alt=""></a></div>';
 											}
 										}
 									}
