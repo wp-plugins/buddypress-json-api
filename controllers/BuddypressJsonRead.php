@@ -1357,7 +1357,7 @@ class JSON_API_BuddypressRead_Controller {
 											if($spliterStr2){$spliterStr = $spliterStr2;}
 											if($others>1){
 												$spliterStr = 'and '.$others.' others ' . $spliterStr;
-											}else{
+											}elseif($others==1){
 												$spliterStr = 'and '.$others.' other '. $spliterStr;
 											}
 											break;
