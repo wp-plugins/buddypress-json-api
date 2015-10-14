@@ -1312,13 +1312,13 @@ class JSON_API_BuddypressRead_Controller {
 			$aParams ['display_comments'] = $this->comments;
 			$aParams ['sort'] = $this->sort;		
 			
-			if($this->userid){
+			//if($this->userid){
 				$aParams ['filter'] ['user_id'] = $this->userid;
 				$aParams ['filter'] ['object'] = $this->component;
 				$aParams ['filter'] ['type'] = $this->type;
 				$aParams ['filter'] ['primary_id'] = $this->itemid;
 				$aParams ['filter'] ['secondary_id'] = $this->secondaryitemid;
-			}
+			//}
 			$iLimit = $this->limit;
 			
 			$page = $_GET['thepage'];
@@ -1352,13 +1352,19 @@ class JSON_API_BuddypressRead_Controller {
 				$acounter=0;
                 foreach ($aTempActivities['activities'] as $oActivity) {
 					if($oActivity->component=='votes'){ }else{
-						if(($oActivity->component=='xprofile' && $oActivity->type=='updated_profile') || $oActivity->component=='profile' && $oActivity->type=='new_avatar'){
+						if($oActivity->type=='updated_profile' || $oActivity->type=='new_avatar'){
 							$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][0] = $oActivity;
 						}else{
-							$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][] = $oActivity;
+							if($oActivity->type=='new_forum_post'){
+								$randVar = time().rand(1,1000);
+								$theActivityGroup[$oActivity->component][$oActivity->type][$randVar][] = $oActivity;
+							}else{
+								$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][] = $oActivity;
+							}
 						}
 					}
 				}
+				
 				$activityFinalArr = array();
 				if($theActivityGroup){
 					foreach($theActivityGroup as $activityCompArr){
@@ -1371,9 +1377,8 @@ class JSON_API_BuddypressRead_Controller {
 								$newMembersArr = array();
 								$spliterStr2 = '';
 								if(count($activityUerArr)>1){
-									for($i=0;$i<count($activityUerArr);$i++){
-										$theAct = array();
-										$theAct = $activityUerArr[$i];
+									$i=0;
+									foreach($activityUerArr as $theAct){
 										if($theAct->component=='groups' && $theAct->type=='joined_group'){
 											$spliterStr = 'joined the group';											
 										}else if($theAct->component=='birth_chart' && $theAct->type=='save_chart'){
@@ -1401,6 +1406,7 @@ class JSON_API_BuddypressRead_Controller {
 											}
 											break;
 										}
+										$i++;
 									}
 									$theActivityVar = $activityUerArr[0];
 									if(count($theStrArr)==2){$theSep = ' & ';}else{$theSep = ', ';}
@@ -1411,7 +1417,7 @@ class JSON_API_BuddypressRead_Controller {
 									$activityUerArr[0]->multiActivity = 0;
 									$theActivityVar=$activityUerArr[0];									
 								}
-								if($theActivityVar->component=='groups'){
+								if($theActivityVar->component=='groups' && $this->component==''){
 									$aGroup = groups_get_group( array( 'group_id' => $theActivityVar->item_id ) );
 									if($aGroup){
 										$Gname = $aGroup->name;
@@ -1494,10 +1500,13 @@ class JSON_API_BuddypressRead_Controller {
 						$oReturn->activities[$acounter]->action = $oActivity->action;
 						if(strlen($oActivity->content)>10){
 							$oActivity->content = do_shortcode($oActivity->content);
-						}
+						}						
 						$srch = array('&rdquo;','&rdquo; ');
 						$repl = array('"','"');
-						$oReturn->activities[$acounter]->content = str_replace($srch,$repl,nl2br(stripcslashes(wp_specialchars_decode($oActivity->content))));
+						if($oActivity->type=='new_blog_comment'){
+							$oActivity->content = str_replace($srch,$repl,nl2br(wp_specialchars_decode($oActivity->content)));
+						}
+						$oReturn->activities[$acounter]->content = stripcslashes($oActivity->content);
 						$oReturn->activities[$acounter]->is_hidden = $oActivity->hide_sitewide === "0" ? false : true;
 						$oReturn->activities[$acounter]->is_spam = $oActivity->is_spam === "0" ? false : true;
 						
