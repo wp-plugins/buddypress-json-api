@@ -379,3 +379,6 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 
 =1.0.39 =
 * activity api - change.
+
+=1.0.40 =
+* activity api - change.

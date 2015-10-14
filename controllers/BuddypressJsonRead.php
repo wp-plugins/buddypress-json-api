@@ -482,7 +482,7 @@ class JSON_API_BuddypressRead_Controller {
 			if(function_exists('bp_core_get_userlink')){
 				$primary_link     = bp_core_get_userlink($user_id, false, true );
 			}
-			$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
+			//$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
 			$activity_id = bp_activity_add( array(
 				'user_id'      => $user_id,
 				'content'      => $bpfb_code,
@@ -533,7 +533,7 @@ class JSON_API_BuddypressRead_Controller {
 		}
 		
 		$bpfb_code = apply_filters('bpfb_code_before_save', $bpfb_code);
-		if($bpfb_code){
+		if(!$bpfb_code){
 			$oReturn->error = __('bpfb code - activity error. Something wrong.','aheadzen');return $oReturn;
 		}
 		if(trim($_POST['content'])){
@@ -546,7 +546,7 @@ class JSON_API_BuddypressRead_Controller {
 			if(function_exists('bp_core_get_userlink')){
 				$primary_link     = bp_core_get_userlink($user_id, false, true );
 			}
-			$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
+			//$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
 			$activity_id = bp_activity_add( array(
 				'user_id'      => $user_id,
 				'content'      => $bpfb_code,
