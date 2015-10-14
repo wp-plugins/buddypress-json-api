@@ -477,11 +477,27 @@ class JSON_API_BuddypressRead_Controller {
 		$bpfb_code = $BpfbCodec->create_images_tag($images);
 		$bpfb_code = apply_filters('bpfb_code_before_save', $bpfb_code);
 		if(function_exists('bp_activity_post_update')){
+			//$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
+			$primary_link = '';
+			if(function_exists('bp_core_get_userlink')){
+				$primary_link     = bp_core_get_userlink($user_id, false, true );
+			}
 			$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
-			global $blog_id;
-			bp_activity_update_meta($activity_id, 'bpfb_blog_id', $blog_id);
-			
-			
+			$activity_id = bp_activity_add( array(
+				'user_id'      => $user_id,
+				'content'      => $bpfb_code,
+				'primary_link' => $primary_link,
+				'component'    => buddypress()->activity->id,
+				'type'         => 'activity_photo',
+			) );
+			bp_update_user_meta($user_id, 'bp_latest_update', array(
+				'id'      => $activity_id,
+				'content' => $bpfb_code
+			));
+			if($activity_id){
+				global $blog_id;
+				bp_activity_update_meta($activity_id, 'bpfb_blog_id', $blog_id);
+			}
 			
 		}else{
 			$oReturn->error = __('Add activity error. Something wrong.','aheadzen');
@@ -517,22 +533,43 @@ class JSON_API_BuddypressRead_Controller {
 		}
 		
 		$bpfb_code = apply_filters('bpfb_code_before_save', $bpfb_code);
+		if($bpfb_code){
+			$oReturn->error = __('bpfb code - activity error. Something wrong.','aheadzen');return $oReturn;
+		}
 		if(trim($_POST['content'])){
 			$bpfb_code = $_POST['content'] .'<br>'. $bpfb_code;
 		}
 		
 		if(function_exists('bp_activity_post_update')){
+			//$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
+			$primary_link = '';
+			if(function_exists('bp_core_get_userlink')){
+				$primary_link     = bp_core_get_userlink($user_id, false, true );
+			}
 			$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
-			global $blog_id;
-			bp_activity_update_meta($activity_id, 'bpfb_blog_id', $blog_id);
+			$activity_id = bp_activity_add( array(
+				'user_id'      => $user_id,
+				'content'      => $bpfb_code,
+				'primary_link' => $primary_link,
+				'component'    => buddypress()->activity->id,
+				'type'         => 'activity_photo',
+			) );
+			bp_update_user_meta($user_id, 'bp_latest_update', array(
+				'id'      => $activity_id,
+				'content' => $bpfb_code
+			));
+			if($activity_id){
+				global $blog_id;
+				bp_activity_update_meta($activity_id, 'bpfb_blog_id', $blog_id);
+				$oReturn->success->id = $activity_id;
+				$oReturn->success->msg = __('Activity added successfully.','aheadzen');
+			}else{
+				$oReturn->error = __('Add activity error. Something wrong.','aheadzen');
+			}
 		}else{
-			$oReturn->error = __('Add activity error. Something wrong.','aheadzen');
+			$oReturn->error = __('Add activity Buddypress function error. Something wrong.','aheadzen');
 		}
 		
-
-
-		$oReturn->success->id = $activity_id;
-		$oReturn->success->msg = __('Activity added successfully.','aheadzen');
 		return $oReturn;
 	}
 	
@@ -1355,10 +1392,12 @@ class JSON_API_BuddypressRead_Controller {
 										if($i==2){
 											$others = (count($activityUerArr)-3);
 											if($spliterStr2){$spliterStr = $spliterStr2;}
-											if($others>1){
-												$spliterStr = 'and '.$others.' others ' . $spliterStr;
-											}elseif($others==1){
-												$spliterStr = 'and '.$others.' other '. $spliterStr;
+											if($others>=1){
+												if($others>1){
+													$spliterStr = 'and '.$others.' others ' . $spliterStr;
+												}elseif($others==1){
+													$spliterStr = 'and '.$others.' other '. $spliterStr;
+												}
 											}
 											break;
 										}
@@ -1385,8 +1424,9 @@ class JSON_API_BuddypressRead_Controller {
 									$theActivityVar->content = '<a href="'.$Gpermalink.'"><img src="'.$avatar_url.'" alt="'.$Gname.'" class="full-image" style="max-width:250px;height:auto;"></a>';									
 								}else if($theActivityVar->component=='birth_chart' && $theActivityVar->type=='save_chart'){
 									$post_thumbnail = get_the_post_thumbnail(4089,'medium',array( 'class' => 'full-image', 'style' => 'max-width:250px;height:auto;'));
+									$birthChartLink = get_permalink(4089);
 									if($post_thumbnail){
-										$theActivityVar->content = $post_thumbnail;
+										$theActivityVar->content = '<a href="'.$birthChartLink.'">'.$post_thumbnail.'</a>';
 									}
 								}else if($theActivityVar->component=='members' && $theActivityVar->type=='new_member'){
 									$contentStr =  '<div class="row activityJoinUsers">';
@@ -1455,7 +1495,9 @@ class JSON_API_BuddypressRead_Controller {
 						if(strlen($oActivity->content)>10){
 							$oActivity->content = do_shortcode($oActivity->content);
 						}
-						$oReturn->activities[$acounter]->content = stripcslashes($oActivity->content);
+						$srch = array('&rdquo;','&rdquo; ');
+						$repl = array('"','"');
+						$oReturn->activities[$acounter]->content = str_replace($srch,$repl,nl2br(stripcslashes(wp_specialchars_decode($oActivity->content))));
 						$oReturn->activities[$acounter]->is_hidden = $oActivity->hide_sitewide === "0" ? false : true;
 						$oReturn->activities[$acounter]->is_spam = $oActivity->is_spam === "0" ? false : true;
 						
@@ -1755,7 +1797,7 @@ class JSON_API_BuddypressRead_Controller {
 						$oReturn->activities[$acounter]->vote->uplink = $uplink;
 						$oReturn->activities[$acounter]->vote->downlink = $downlink;
 						$oReturn->activities[$acounter]->vote->action = $voteed_action;
-						
+						$oReturn->activities[$acounter]->multiActivity = 0;
 					
 						if($oActivity->children){
 							/*children*/
@@ -1939,7 +1981,7 @@ class JSON_API_BuddypressRead_Controller {
 				$oReturn->profilefields->photo->avatar = $bbp_cover_pic;
 				$oReturn->profilefields->photo->avatar_big = $bbp_cover_pic;
 				$oReturn->profilefields->photo->avatar_thumb = $avatar_thumb_src;
-				$oReturn->profilefields->photo->avatar_mini = $avatar_mini_src;
+				$oReturn->profilefields->photo->avatar_mini = $user_avatar_src;
 				$oReturn->profilefields->user->username = $user->profile_data['user_login'];
 				$oReturn->profilefields->user->userid = $userid;			
 				
