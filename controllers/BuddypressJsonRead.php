@@ -26,6 +26,88 @@ class JSON_API_BuddypressRead_Controller {
 	}
 	
 	/************************************************
+	Post Forum Topic
+	************************************************/
+	 public function forum_post_topic() {		
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['userid']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
+		if(!$_POST['title']){$oReturn->error = __('Title is empty.','aheadzen'); return $oReturn;}
+		if(!$_POST['content']){$oReturn->error = __('Content is empty.','aheadzen'); return $oReturn;}
+		if(!$_POST['forumslug']){$oReturn->error = __('Wrong Forum ID.','aheadzen'); return $oReturn;}
+				
+		$userid = $_POST['userid'];
+		$title = trim($_POST['title']);
+		$content = trim($_POST['content']);
+		$forum_id = $_POST['forumslug'];
+		$terms = array();
+				
+		$topic_data = array(
+			'post_author'    => $userid,
+			'post_title'     => $title,
+			'post_content'   => $content,
+			'post_status'    => 'publish',
+			'post_parent'    => $forum_id,
+			'post_type'      => bbp_get_topic_post_type(),
+			'tax_input'      => $terms,
+			'comment_status' => 'closed'
+		);
+		// Insert topic
+		$topic_id = wp_insert_post( $topic_data );
+		if($topic_id){
+			$oReturn->success->id = $topic_id;
+			$oReturn->success->message = __('Topic Added Successfully.','aheadzen');
+		}else{
+			$oReturn->success->error = __('Topic Add Error.','aheadzen');
+		}
+		return  $oReturn;
+	 }
+	 
+	 /************************************************
+	Post Forum Topic
+	************************************************/
+	 public function forum_post_topicpost() {		
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['userid']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
+		if(!$_POST['content']){$oReturn->error = __('Content is empty.','aheadzen'); return $oReturn;}
+		if(!$_POST['topic_id']){$oReturn->error = __('Wrong Topic ID.','aheadzen'); return $oReturn;}
+				
+		$userid = trim($_POST['userid']);
+		$title = '';
+		$content = trim($_POST['content']);
+		$topic_id = trim($_POST['topic_id']);
+		$terms = array();
+		
+		$reply_data = array(
+			'post_author'    => $userid,
+			'post_title'     => $title,
+			'post_content'   => $content,
+			'post_status'    => 'publish',
+			'post_parent'    => $topic_id,
+			'post_type'      => bbp_get_reply_post_type(),
+			'comment_status' => 'closed',
+			'menu_order'     => bbp_get_topic_reply_count( $topic_id, false ) + 1
+		);
+		// Insert reply
+		$reply_id = wp_insert_post( $reply_data );	
+		if($reply_id){
+			$oReturn->success->id = $reply_id;
+			$oReturn->success->message = __('Topic Reply Added Successfully.','aheadzen');
+		}else{
+			$oReturn->success->error = __('Topic Reply Add Error.','aheadzen');
+		}
+		return  $oReturn;
+	 }
+	 
+	 
+	/************************************************
 	Change Password
 	************************************************/
 	 public function profile_change_pw() {		
@@ -479,31 +561,36 @@ class JSON_API_BuddypressRead_Controller {
 		if(function_exists('bp_activity_post_update')){
 			//$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
 			$primary_link = '';
-			if(function_exists('bp_core_get_userlink')){
-				$primary_link     = bp_core_get_userlink($user_id, false, true );
-			}
+			
 			//$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
-			$activity_id = bp_activity_add( array(
-				'user_id'      => $user_id,
-				'content'      => $bpfb_code,
-				'primary_link' => $primary_link,
-				'component'    => buddypress()->activity->id,
-				'type'         => 'activity_photo',
-			) );
-			bp_update_user_meta($user_id, 'bp_latest_update', array(
-				'id'      => $activity_id,
-				'content' => $bpfb_code
-			));
+			
+				if(function_exists('bp_core_get_userlink')){
+					$primary_link     = bp_core_get_userlink($user_id, false, true );
+				}
+				$activity_id = bp_activity_add( array(
+					'user_id'      => $user_id,
+					'content'      => $bpfb_code,
+					'primary_link' => $primary_link,
+					'component'    => buddypress()->activity->id,
+					'type'         => 'activity_photo',
+				) );
+				bp_update_user_meta($user_id, 'bp_latest_update', array(
+					'id'      => $activity_id,
+					'content' => $bpfb_code
+				));
+				if($activity_id){
+					global $blog_id;
+					bp_activity_update_meta($activity_id, 'bpfb_blog_id', $blog_id);
+				}
+			
 			if($activity_id){
-				global $blog_id;
-				bp_activity_update_meta($activity_id, 'bpfb_blog_id', $blog_id);
+				$oReturn->success->id = $activity_id;
+				$oReturn->success->msg = __('Activity added successfully.','aheadzen');
 			}
 			
 		}else{
 			$oReturn->error = __('Add activity error. Something wrong.','aheadzen');
-		}
-		$oReturn->success->id = $activity_id;
-		$oReturn->success->msg = __('Activity added successfully.','aheadzen');
+		}		
 		return $oReturn;
 	}
 	
@@ -539,21 +626,41 @@ class JSON_API_BuddypressRead_Controller {
 		if(trim($_POST['content'])){
 			$bpfb_code = $_POST['content'] .'<br>'. $bpfb_code;
 		}
-		
-		if(function_exists('bp_activity_post_update')){
+		$groupid = 0;
+		if($_POST['bpfb_type']=='groups'){
+			$groupid = $_POST['groupid'];  //groups;
+			$bp = buddypress();
+			$bp->groups->current_group = groups_get_group( array( 'group_id' => $groupid ) );
+			$action  = sprintf( __( '%1$s posted an update in the group %2$s', 'buddypress'), bp_core_get_userlink( $user_id ), '<a href="' . bp_get_group_permalink( $bp->groups->current_group ) . '">' . esc_attr( $bp->groups->current_group->name ) . '</a>' );
+			
+			$arg = array(
+				'user_id' => $user_id,
+				'action'  => $action,
+				'content' => $bpfb_code,
+				'type'    => 'activity_photo',
+				'item_id' => $groupid
+			);
+			$activity_id = groups_record_activity($arg);
+			groups_update_groupmeta( $groupid, 'last_activity', bp_core_current_time() );
+			if($activity_id){
+				$oReturn->success->id = $activity_id;
+				$oReturn->success->msg = __('Activity added successfully.','aheadzen');
+			}
+		}elseif(function_exists('bp_activity_post_update')){
 			//$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
 			$primary_link = '';
 			if(function_exists('bp_core_get_userlink')){
 				$primary_link     = bp_core_get_userlink($user_id, false, true );
 			}
-			//$activity_id = bp_activity_post_update(array('content' => $bpfb_code,'user_id' => $user_id));
-			$activity_id = bp_activity_add( array(
+			$args = array(
 				'user_id'      => $user_id,
 				'content'      => $bpfb_code,
 				'primary_link' => $primary_link,
 				'component'    => buddypress()->activity->id,
 				'type'         => 'activity_photo',
-			) );
+			);
+			if($groupid){$args['item_id']=$groupid;}
+			$activity_id = bp_activity_add($args);
 			bp_update_user_meta($user_id, 'bp_latest_update', array(
 				'id'      => $activity_id,
 				'content' => $bpfb_code
@@ -972,14 +1079,36 @@ class JSON_API_BuddypressRead_Controller {
 		$user_id = $_POST['userid'];
 		$activityid = (int)$_POST['activityid'];
 		
-		$arg = array(
+		$groupid = 0;
+		if($_POST['bpfb_type']=='groups'){
+			$groupid = $_POST['groupid'];  //groups;
+			$bp = buddypress();
+			$bp->groups->current_group = groups_get_group( array( 'group_id' => $groupid ) );
+			$action  = sprintf( __( '%1$s posted an update in the group %2$s', 'buddypress'), bp_core_get_userlink( $user_id ), '<a href="' . bp_get_group_permalink( $bp->groups->current_group ) . '">' . esc_attr( $bp->groups->current_group->name ) . '</a>' );
+			
+			$arg = array(
+				'user_id' => $user_id,
+				'action'  => $action,
+				'content' => $content,
+				'type'    => 'activity_update',
+				'item_id' => $groupid
+			);
+			if($activityid){$arg['id'] = $activityid;} //update activity
+			$activity_id = groups_record_activity($arg);
+			groups_update_groupmeta( $groupid, 'last_activity', bp_core_current_time() );
+			
+		}else{
+			$arg = array(
 					'user_id'   => $user_id,
 					'component' => 'activity',
 					'type'      => 'activity_update',
 					'content'   => $content
 				);
-		if($activityid){$arg['id'] = $activityid;} //update activity
-		if($activity_id = bp_activity_add($arg)){
+			if($activityid){$arg['id'] = $activityid;} //update activity
+			$activity_id = bp_activity_add($arg);
+		}
+		
+		if($activity_id){
 			$oReturn->success->id = $activity_id;
 			if($activityid){
 				$oReturn->success->message = __('Activity updated successfully.','aheadzen');
@@ -1292,9 +1421,6 @@ class JSON_API_BuddypressRead_Controller {
 			$oUser = get_user_by('login', $_GET['username']);
 			if($oUser){$this->userid = $oUser->data->ID;}
 		}
-		
-		//$this->userid='1';
-		
 		$mentionid = $_GET['mentionid'];
 		
 		if($mentionid){
@@ -1355,12 +1481,12 @@ class JSON_API_BuddypressRead_Controller {
 						if($oActivity->type=='updated_profile' || $oActivity->type=='new_avatar'){
 							$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][0] = $oActivity;
 						}else{
-							if($oActivity->type=='new_forum_post'){
-								$randVar = time().rand(1,1000);
-								$theActivityGroup[$oActivity->component][$oActivity->type][$randVar][] = $oActivity;
-							}else{
+							if($oActivity->type=='save_chart' || $oActivity->type=='new_member' || $theAct->type=='joined_group'){
 								$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][] = $oActivity;
-							}
+							}else{
+								$randVar = time().rand(1,100000);
+								$theActivityGroup[$oActivity->component][$oActivity->type][$randVar][] = $oActivity;
+							}							
 						}
 					}
 				}
