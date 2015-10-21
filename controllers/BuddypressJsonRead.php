@@ -26,42 +26,179 @@ class JSON_API_BuddypressRead_Controller {
 	}
 	
 	/************************************************
-	Post Forum Topic
+	Get Post Forum Detail
 	************************************************/
-	 public function forum_post_topic() {		
+	 public function get_forum_topic_detail() {
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_GET['t_id']){$oReturn->error = __('Wrong Topic ID.','aheadzen'); return $oReturn;}
+		$topic_id = $_GET['t_id'];
+		if(function_exists('bp_forums_get_topic_details')){
+			$response = bp_forums_get_topic_details( $topic_id );
+			$oReturn->topic->id = $response->topic_id;
+			$oReturn->topic->title = $response->topic_title;
+			$oReturn->topic->slug = $response->topic_slug;
+			$oReturn->topic->poster->id = $response->topic_poster;
+			$oReturn->topic->poster->name = $response->topic_poster_name;
+			$oReturn->topic->lastposter->id = $response->topic_last_poster;
+			$oReturn->topic->lastposter->name = $response->topic_last_poster_name;
+			$oReturn->topic->start_time = $response->topic_start_time;
+			$oReturn->topic->time = $response->topic_time;
+			$oReturn->topic->last_post_id = $response->topic_last_post_id;
+			$oReturn->topic->forum_name = $response->object_name;
+			$oReturn->topic->forum_slug = $response->object_slug;
+		}
+		/*if (function_exists( 'bbp_get_version' )){ //New  Version
+			$response = bp_forums_get_topic_details( $topic_id );
+		}else{ //OLD Version
+			//$response = bp_forums_delete_topic(array('post_id' => $post_id));
+		}*/
+		
+		return  $oReturn;
+	 }
+	 
+	/************************************************
+	Get Post Forum Detail
+	************************************************/
+	 public function get_forum_post_topic_detail() {
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_GET['p_id']){$oReturn->error = __('Wrong Post ID.','aheadzen'); return $oReturn;}
+		$post_id = $_GET['p_id'];
+		$response = bp_forums_get_post( $post_id );
+		if(function_exists('bp_forums_get_post')){
+			$oReturn->post->id = $response->post_id;
+			$oReturn->post->forum_id = $response->forum_id;
+			$oReturn->post->topic_id = $response->topic_id;
+			$oReturn->post->poster_id = $response->poster_id;
+			$oReturn->post->post_text = $response->post_text;
+			$oReturn->post->post_time = $response->post_time;
+			$oReturn->post->poster_ip = $response->poster_ip;
+			$oReturn->post->post_status = $response->post_status;
+			$oReturn->post->post_position = $response->post_position;
+		}
+		/*if (function_exists( 'bbp_get_version' )){ //New  Version
+			$response = bp_forums_get_post( $post_id );
+		}else{ //OLD Version
+			//$response = bp_forums_delete_topic(array('post_id' => $post_id));
+		}*/
+		return  $oReturn;
+	 }
+	 
+	 
+	/************************************************
+	Post Forum Topic Delete
+	************************************************/
+	 public function forum_post_topic_delete() {
 		header("Access-Control-Allow-Origin: *");
 		$oReturn = new stdClass();
 		$oReturn->success = '';
 		$oReturn->error = '';
 		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
-		if(!$_POST['userid']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
+		if(!$_POST['t_id']){$oReturn->error = __('Wrong Topic ID.','aheadzen'); return $oReturn;}
+		$topic_id = $_POST['t_id'];
+		
+		if (function_exists( 'bbp_get_version' )){ //New  Version
+			$response = wp_delete_post($topic_id);
+		}else{ //OLD Version
+			$response = bp_forums_delete_topic(array('topic_id' => $topic_id));
+		}		
+		if($response){			
+			$oReturn->success->id = $topic_id;
+			$oReturn->success->message = __('Topic Deleted Successfully.','aheadzen');
+		}else{
+			$oReturn->success->error = __('Topic Delete Error.','aheadzen');
+		}
+		return  $oReturn;
+	 }
+	 
+	/************************************************
+	Forum Topic Post Delete
+	************************************************/
+	 public function forum_post_topicpost_delete() {
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['p_id']){$oReturn->error = __('Wrong Post ID.','aheadzen'); return $oReturn;}
+		$post_id = $_POST['p_id'];
+		
+		if (function_exists( 'bbp_get_version' )){ //New  Version
+			$response = wp_delete_post($post_id);
+		}else{ //OLD Version
+			$response = bp_forums_delete_post(array('post_id' => $post_id));
+		}		
+		if($response){			
+			$oReturn->success->id = $topic_id;
+			$oReturn->success->message = __('Topic Post Deleted Successfully.','aheadzen');
+		}else{
+			$oReturn->success->error = __('Topic Post Delete Error.','aheadzen');
+		}
+		return  $oReturn;
+	 }
+	 
+	/************************************************
+	Post Forum Topic
+	************************************************/
+	 public function forum_post_topic() {
+		header("Access-Control-Allow-Origin: *");
+		$oReturn = new stdClass();
+		$oReturn->success = '';
+		$oReturn->error = '';
+		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
+		if(!$_POST['user_id']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
 		if(!$_POST['title']){$oReturn->error = __('Title is empty.','aheadzen'); return $oReturn;}
 		if(!$_POST['content']){$oReturn->error = __('Content is empty.','aheadzen'); return $oReturn;}
-		if(!$_POST['forumslug']){$oReturn->error = __('Wrong Forum ID.','aheadzen'); return $oReturn;}
+		if(!$_POST['f_id']){$oReturn->error = __('Wrong Forum ID.','aheadzen'); return $oReturn;}
 				
-		$userid = $_POST['userid'];
+		$user_id = $_POST['user_id'];
 		$title = trim($_POST['title']);
 		$content = trim($_POST['content']);
-		$forum_id = $_POST['forumslug'];
+		$forum_id = $_POST['f_id'];
+		$topic_id = $_POST['t_id'];
 		$terms = array();
 				
-		$topic_data = array(
-			'post_author'    => $userid,
-			'post_title'     => $title,
-			'post_content'   => $content,
-			'post_status'    => 'publish',
-			'post_parent'    => $forum_id,
-			'post_type'      => bbp_get_topic_post_type(),
-			'tax_input'      => $terms,
-			'comment_status' => 'closed'
-		);
 		// Insert topic
-		$topic_id = wp_insert_post( $topic_data );
-		if($topic_id){
+		if (function_exists( 'bbp_get_version' )){ //New  Version
+			$topic_data = array(
+				'post_author'    => $user_id,
+				'post_title'     => $title,
+				'post_content'   => $content,
+				'post_status'    => 'publish',
+				'post_parent'    => $forum_id,
+				'post_type'      => 'topic',
+				'tax_input'      => $terms,
+				'comment_status' => 'closed'
+			);
+			if($topic_id){ $topic_data['ID']=$topic_id; }
+			$topic_id = wp_insert_post( $topic_data );
+		}else{ //OLD Version 
+			$topic_data = array(
+				'topic_title' => $title,
+				'topic_text'  => $content,
+			);
+			 if($topic_id){
+				$topic_data['topic_id'] = $topic_id;
+				$topic_id = bp_forums_update_topic($topic_data); //Update Topic
+				$successmsg = __('Topic Edited Error.','aheadzen');
+			 }else{
+				 $topic_data['topic_poster'] = $user_id;
+				 $topic_data['forum_id'] = $forum_id;				 
+				$topic_id =  bp_forums_new_topic($topic_data);  //Insert Topic
+				$successmsg = __('Topic Add Error.','aheadzen');
+			 }
+		}
+		
+		if($topic_id){			
 			$oReturn->success->id = $topic_id;
-			$oReturn->success->message = __('Topic Added Successfully.','aheadzen');
+			$oReturn->success->message = $successmsg;
 		}else{
-			$oReturn->success->error = __('Topic Add Error.','aheadzen');
+			$oReturn->success->error = __('Topic Add/Edit Error.','aheadzen');
 		}
 		return  $oReturn;
 	 }
@@ -75,33 +212,45 @@ class JSON_API_BuddypressRead_Controller {
 		$oReturn->success = '';
 		$oReturn->error = '';
 		if(!$_POST){$oReturn->error = __('Not the post method.','aheadzen'); return $oReturn;}
-		if(!$_POST['userid']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
+		if(!$_POST['user_id']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
 		if(!$_POST['content']){$oReturn->error = __('Content is empty.','aheadzen'); return $oReturn;}
-		if(!$_POST['topic_id']){$oReturn->error = __('Wrong Topic ID.','aheadzen'); return $oReturn;}
+		if(!$_POST['t_id']){$oReturn->error = __('Wrong Topic ID.','aheadzen'); return $oReturn;}
 				
-		$userid = trim($_POST['userid']);
+		$userid = trim($_POST['user_id']);
 		$title = '';
 		$content = trim($_POST['content']);
-		$topic_id = trim($_POST['topic_id']);
+		$topic_id = trim($_POST['t_id']);
 		$terms = array();
+		$post_id = $_POST['p_id']; //To Edit Post
+		$successmessage = __('Topic Reply Added Successfully.','aheadzen');
+		if($topic_id){ $successmessage = __('Topic Reply Edited Successfully.','aheadzen'); }
 		
-		$reply_data = array(
-			'post_author'    => $userid,
-			'post_title'     => $title,
-			'post_content'   => $content,
-			'post_status'    => 'publish',
-			'post_parent'    => $topic_id,
-			'post_type'      => bbp_get_reply_post_type(),
-			'comment_status' => 'closed',
-			'menu_order'     => bbp_get_topic_reply_count( $topic_id, false ) + 1
-		);
 		// Insert reply
-		$reply_id = wp_insert_post( $reply_data );	
+		if (function_exists( 'bbp_get_version' )){ //New  Version
+			$reply_data = array(
+				'post_author'    => $userid,
+				'post_title'     => $title,
+				'post_content'   => $content,
+				'post_parent'    => $topic_id,
+				'post_type'      => 'reply',
+			);
+			if($post_id){ $reply_data['ID']=$post_id; }
+			$reply_id = wp_insert_post( $reply_data );
+		}else{ //OLD Version
+			 $reply_data = array(
+			  'post_id'       => $post_id,
+			  'topic_id'      => $topic_id,
+			  'post_text'     => $content,
+			  'poster_id'     => $userid, // accepts ids or names
+			 );
+			$reply_id = bp_forums_insert_post($reply_data);
+		}
+			
 		if($reply_id){
 			$oReturn->success->id = $reply_id;
-			$oReturn->success->message = __('Topic Reply Added Successfully.','aheadzen');
+			$oReturn->success->message = $successmessage;
 		}else{
-			$oReturn->success->error = __('Topic Reply Add Error.','aheadzen');
+			$oReturn->success->error = __('Topic Reply Add/Edit Error.','aheadzen');
 		}
 		return  $oReturn;
 	 }
@@ -353,9 +502,7 @@ class JSON_API_BuddypressRead_Controller {
 		
 		$post = array();		
 		$arg = array('p'=>$pid);
-		if($_GET['ptype']){
-			$arg['post_type']=$_GET['ptype'];
-		}
+		if($_GET['ptype']){ $arg['post_type']=$_GET['ptype']; }
 		
 		query_posts($arg);
 		if(have_posts()){
@@ -365,6 +512,25 @@ class JSON_API_BuddypressRead_Controller {
 				$post_data['bpfb_url'] = get_permalink();
 				$post_data['author_id'] = get_the_author_meta('ID');
 				$post_data['image'] = '';
+			endwhile;
+			wp_reset_query();
+		}elseif($_GET['ptype']=='reply' && function_exists('bp_forums_get_post')){
+			$response = bp_forums_get_post($pid);
+			$topic_id = $response->topic_id;
+			$topicData = bp_forums_get_topic_details($topic_id);
+			$topic_title = $topicData->topic_title;
+			$display_name = bp_core_get_user_displaynames($response->poster_id);
+			$primary_link     = bp_core_get_userlink($response->poster_id, false, true );
+			$activity_content = '<div><p>'.$topic_title.' \'s post by <a href="'.$primary_link.'">'.$display_name.'</a></p><p>'.$response->post_text.'</p></div>';			
+			
+		}elseif($_GET['ptype']=='topic' && function_exists('bp_forums_get_topic_details')){
+			$response = bp_forums_get_topic_details($pid);
+			$display_name = bp_core_get_user_displaynames($response->topic_poster);
+			$primary_link     = bp_core_get_userlink($response->topic_poster, false, true );
+			$activity_content = '<div><p>'.$response->topic_title.' by <a href="'.$primary_link.'">'.$display_name.'</a></p></div>';
+		}
+		
+		if($post_data['title'] && $post_data['author_id']){	
 				$image_src = '';
 				preg_match('/<img.+src=[\'"](?P<src>.+)[\'"].*>/i', get_the_content(), $image);
 				if($image['src']){
@@ -392,8 +558,10 @@ class JSON_API_BuddypressRead_Controller {
 					}
 				}
 				
-				$BpfbCodec = new BpfbCodec();
-				$activity_content = $post_data['mentions'].$BpfbCodec->create_link_tag($post_data['bpfb_url'],$post_data['title'],$post_data['text'],$post_data['image']);		
+				if($post_data['bpfb_url']){
+					$BpfbCodec = new BpfbCodec();
+					$activity_content = $post_data['mentions'].$BpfbCodec->create_link_tag($post_data['bpfb_url'],$post_data['title'],$post_data['text'],$post_data['image']);		
+				}
 				$display_name = bp_core_get_user_displaynames($post_data['userid']);
 				$primary_link     = bp_core_get_userlink($post_data['userid'], false, true );
 				$add_primary_link = apply_filters( 'bp_activity_new_update_primary_link', $primary_link );
@@ -449,9 +617,6 @@ class JSON_API_BuddypressRead_Controller {
 					}
 				}				
 				$oReturn->success->id = $activity_id;
-				
-			endwhile;
-			wp_reset_query();
 		}else{
 			$oReturn->error = __('No data available.','aheadzen');
 		}		
@@ -811,14 +976,32 @@ class JSON_API_BuddypressRead_Controller {
 		global $wpdb,$table_prefix;
 		
 		$keyword = trim($_GET['keyword']);
+		$counter=0;
 		if($keyword){
-			$sql = "select user_login from ".$table_prefix."users where user_login not like \"%@%\" and user_login like \"$keyword%\" order by user_login limit 10";
-			$oReturn->members = $wpdb->get_col($sql);
-			
-		}else{
-			$oReturn->members = array();
+			$sql = "select ID,user_login,display_name from ".$table_prefix."users where user_login not like \"%@%\" and (user_login like \"$keyword%\" || display_name like \"$keyword%\") order by user_login limit 10";
+			$res = $wpdb->get_results($sql);
+			if($res){
+				foreach($res as $resobj){
+					if($resobj->display_name){
+						$user = new BP_Core_User($resobj->ID);				
+						if($user){
+							$avatar_thumb = '';
+							if($user->avatar_thumb){
+								preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+								$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+								if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+							}
+						}
+						$oReturn->members[$counter]->login = $resobj->user_login;
+						$oReturn->members[$counter]->name = $resobj->display_name;
+						$oReturn->members[$counter]->thumb = $avatar_thumb;
+						$counter++;
+					}
+				}
+			}else{
+				$oReturn->msg = __('No Result','aheadzen');
+			}
 		}
-		//echo '<pre>';print_r($oReturn);exit;
 		return $oReturn;
 	 }
 	 
@@ -832,13 +1015,18 @@ class JSON_API_BuddypressRead_Controller {
 		$oReturn->total = 0;
 		$bp_members = array();
 		$member_data = array();
-		global $wpdb,$table_prefix;
-		
+		$subsql = '';
+		global $wpdb,$table_prefix;		
 		$keyword = trim($_GET['keyword']);
-		if($keyword==''){ $oReturn->error = __('Please enter keyword to search.','aheadzen'); return $oReturn;}
-		
-		$sql = "select DISTINCT(user_id) from ".$table_prefix."bp_xprofile_data where MATCH (value) AGAINST('".$keyword."*' IN BOOLEAN MODE) limit 10";
-		$members = $wpdb->get_col($sql);
+		$thepage = $_GET['thepage'];
+		$limit = $_GET['limit'];
+		if(!$thepage){$thepage=0;}
+		if(!$limit){$limit=10;}
+		$start = $thepage*$limit;
+		//if($keyword==''){ $oReturn->error = __('Please enter keyword to search.','aheadzen'); return $oReturn;}		
+		if($keyword){ $subsql = " AND MATCH (value) AGAINST('".$keyword."*' IN BOOLEAN MODE) "; }		
+		$sql = "select DISTINCT(user_id) from ".$table_prefix."bp_xprofile_data where 1 $subsql  limit $start, $limit";
+		$members = $wpdb->get_col($sql) or die(mysql_error());
 		if($members){
 			$counter = 0;
 			for($m=0;$m<count($members);$m++){
@@ -2482,8 +2670,8 @@ class JSON_API_BuddypressRead_Controller {
 		$aGroup = groups_get_group( array( 'group_id' => $group_id ) );
 		if($aGroup){
 			$oReturn->groupfields->id = $aGroup->id;
-			$oReturn->groupfields->name = $aGroup->name;
-            $oReturn->groupfields->description = $aGroup->description;
+			$oReturn->groupfields->name = stripcslashes($aGroup->name);
+            $oReturn->groupfields->description = stripcslashes($aGroup->description);
             $oReturn->groupfields->status = $aGroup->status;
            
 			$oUser = get_user_by('id', $aGroup->creator_id);
@@ -2611,22 +2799,30 @@ class JSON_API_BuddypressRead_Controller {
      * @param int per_page: The number of results to return per page (default 20)
      * @return array groups: array with meta infos
      */
-    public function groups_get_groups() {
-        //$this->init('groups');
-		$this->init('forums');
+	function get_members_joined_groups($joindedMems)
+	{
+		$groups = groups_get_groups($joindedMems);
+		return $groups;
+	}
+	
+	public function groups_get_groups() {
+        $this->init('forums');
 		$oReturn = new stdClass();
-
+		$aParams = array();
         if ($this->username !== false || username_exists($this->username)) {
             $oUser = get_user_by('login', $this->username);
             $aParams ['user_id'] = $oUser->data->ID;
         }
-
+		
+		$joinedGroups = array();
+		$orderbyField = 'last_activity';
+		$orderby = 'ASC';
         $aParams ['show_hidden'] = $this->show_hidden;
         $aParams ['type'] = $this->type;
         $aParams ['page'] = $this->page;
         $aParams ['per_page'] = $this->per_page;
-		$aParams ['order'] = 'ASC';
-		$aParams ['orderby'] = 'last_activity';
+		$aParams ['order'] = $orderby;
+		$aParams ['orderby'] = $orderbyField;
 		if($_GET['keyword']){
 			$keyword = trim($_GET['keyword']);
 			global $wpdb,$table_prefix;
@@ -2635,9 +2831,28 @@ class JSON_API_BuddypressRead_Controller {
 			if($groupIDs){
 				$aParams['include'] = $groupIDs;
 			}
+		}elseif($_GET['currentUser']){
+			global $table_prefix, $wpdb;
+			$memberGroupSql = "select group_id,is_admin from ".$table_prefix."bp_groups_members where user_id='".$_GET['currentUser']."'";
+			$memberGroups = $wpdb->get_col($memberGroupSql);
+			if($memberGroups){
+				$joindedMems = array();
+				$joindedMems['show_hidden'] = $this->show_hidden;
+				$joindedMems['type'] = $this->type;
+				$joindedMems['page'] = $this->page;
+				$joindedMems['per_page'] = $this->per_page;
+				$joindedMems['order'] = $orderby;
+				$joindedMems['orderby'] = $orderbyField;
+				$joindedMems['include'] = $memberGroups;
+				$joinedGroups = $this->get_members_joined_groups($joindedMems);
+				$aParams['exclude'] = $memberGroups;				
+			}
 		}
+		$aGroups = array();
 		$aGroups = groups_get_groups($aParams);
-		
+		if($joinedGroups && $joinedGroups['groups'] && $aGroups && $aGroups['groups'] && $aParams['page']==1){
+			$aGroups['groups'] = array_merge($joinedGroups['groups'],$aGroups['groups']);
+		}
 		if ($aGroups['total'] == "0")
             return $this->error('groups', 0);
 		
@@ -2645,7 +2860,7 @@ class JSON_API_BuddypressRead_Controller {
         foreach ($aGroups['groups'] as $aGroup) {
 			$oReturn->groups[$counter]->id = $aGroup->id;
 			$oReturn->groups[$counter]->name = $aGroup->name;
-            $oReturn->groups[$counter]->description = $aGroup->description;
+            $oReturn->groups[$counter]->description = stripcslashes($aGroup->description);
             $oReturn->groups[$counter]->status = $aGroup->status;
             if ($aGroup->status == "private" && !is_user_logged_in() && !$aGroup->is_member === true)
                 continue;
@@ -2974,7 +3189,7 @@ class JSON_API_BuddypressRead_Controller {
         if (is_null($aTopics))
             $this->error('forums', 7);
         foreach ($aTopics as $aTopic) {
-            $oReturn->topics[(int) $aTopic->topic_id]->title = $aTopic->topic_title;
+            $oReturn->topics[(int) $aTopic->topic_id]->title = stripcslashes($aTopic->topic_title);
             $oReturn->topics[(int) $aTopic->topic_id]->slug = $aTopic->topic_slug;
             $oUser = get_user_by('id', $aTopic->topic_poster);
             $oReturn->topics[(int) $aTopic->topic_id]->poster->ID = $oUser->data->ID;
@@ -3055,7 +3270,7 @@ class JSON_API_BuddypressRead_Controller {
 			$oReturn->posts[(int) $oPost->post_id]->poster->username = $oUser->data->user_login;
             $oReturn->posts[(int) $oPost->post_id]->poster->mail = $oUser->data->user_email;
             $oReturn->posts[(int) $oPost->post_id]->poster->display_name = $oUser->data->display_name;
-            $oReturn->posts[(int) $oPost->post_id]->post_text = $oPost->post_text;
+            $oReturn->posts[(int) $oPost->post_id]->post_text = stripcslashes($oPost->post_text);
             $oReturn->posts[(int) $oPost->post_id]->post_time = $oPost->post_time;
             $oReturn->posts[(int) $oPost->post_id]->post_position = (int) $oPost->post_position;
         }
