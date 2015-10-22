@@ -1665,6 +1665,7 @@ class JSON_API_BuddypressRead_Controller {
 			$aParams ['per_page'] = $this->offset;
 			$iPages = $this->pages;
 		}
+		
 		$aTempActivities = bp_activity_get($aParams);
 		
 		$theActivityGroup = array();
@@ -1673,7 +1674,7 @@ class JSON_API_BuddypressRead_Controller {
                 foreach ($aTempActivities['activities'] as $oActivity) {
 					if($oActivity->component=='votes'){ }else{
 						if($oActivity->type=='updated_profile' || $oActivity->type=='new_avatar'){
-							$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][0] = $oActivity;
+							$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->user_id][0] = $oActivity;
 						}else{
 							if($oActivity->type=='save_chart' || $oActivity->type=='new_member' || $theAct->type=='joined_group'){
 								$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][] = $oActivity;

@@ -394,3 +394,6 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 
 =1.0.44 =
 * Forum Topic & Topic post add New API.
+
+=1.0.45 =
+* Forum Topic & Topic post add New API.
