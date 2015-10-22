@@ -485,6 +485,7 @@ class JSON_API_BuddypressRead_Controller {
 	function share_the_link(){
 		$pid = $_GET['id'];
 		$post_data = array();
+		$activity_action = '';
 		$post_data['sharetogroup']=$post_data['mentions']='';
 		if($_GET['shareto']=='user' && $_GET['sharetouser']){
 			$post_data['mentions'] = $_GET['sharetouser'];
@@ -512,24 +513,30 @@ class JSON_API_BuddypressRead_Controller {
 				$post_data['bpfb_url'] = get_permalink();
 				$post_data['author_id'] = get_the_author_meta('ID');
 				$post_data['image'] = '';
+				$activity_action = 'post';
 			endwhile;
 			wp_reset_query();
 		}elseif($_GET['ptype']=='reply' && function_exists('bp_forums_get_post')){
 			$response = bp_forums_get_post($pid);
 			$topic_id = $response->topic_id;
+			$oForum = bp_forums_get_forum((int)$response->forum_id);
 			$topicData = bp_forums_get_topic_details($topic_id);
 			$topic_title = $topicData->topic_title;
-			$display_name = bp_core_get_user_displaynames($response->poster_id);
-			$primary_link     = bp_core_get_userlink($response->poster_id, false, true );
-			$activity_content = '<div><p>'.$topic_title.' \'s post by <a href="'.$primary_link.'">'.$display_name.'</a></p><p>'.$response->post_text.'</p></div>';			
-			
+			$post_data['title']=$topicData->topic_title;
+			$post_data['author_id']=$response->poster_id;
+			$forumURL = site_url('/groups/'.$oForum->forum_slug.'/forum/');
+			$topicURL = site_url('/groups/'.$oForum->forum_slug.'/forum/topic/'.$topicData->topic_slug);
+			$activity_content = $response->post_text;
+			$activity_action = 'reply on <a href="'.$topicURL.'">'.$topic_title.'</a>';
 		}elseif($_GET['ptype']=='topic' && function_exists('bp_forums_get_topic_details')){
 			$response = bp_forums_get_topic_details($pid);
-			$display_name = bp_core_get_user_displaynames($response->topic_poster);
-			$primary_link     = bp_core_get_userlink($response->topic_poster, false, true );
-			$activity_content = '<div><p>'.$response->topic_title.' by <a href="'.$primary_link.'">'.$display_name.'</a></p></div>';
+			$topicURL = site_url('/groups/'.$response->object_slug.'/forum/topic/'.$response->topic_slug);
+			$groupURL = site_url('/groups/'.$response->object_slug);
+			$post_data['title']=$response->topic_title;
+			$post_data['author_id']=$response->topic_poster;
+			$activity_content = $response->topic_title;
+			$activity_action = 'topic <a href="'.$topicURL.'">'.$response->topic_title.'</a> of group <a href="'.$groupURL.'">'.$response->object_name.'</a>';
 		}
-		
 		if($post_data['title'] && $post_data['author_id']){	
 				$image_src = '';
 				preg_match('/<img.+src=[\'"](?P<src>.+)[\'"].*>/i', get_the_content(), $image);
@@ -574,7 +581,6 @@ class JSON_API_BuddypressRead_Controller {
 					$bp->groups->current_group = groups_get_group(array('group_id' =>$post_data['sharetogroup']));
 					if(groups_is_user_member($post_data['userid'],$post_data['sharetogroup'])){
 						$activity_action  = bp_core_get_userlink($post_data['userid']).' shared <a href="'.$author_primary_link.'">'.$author_display_name.'</a>\'s post in the group <a href="' . bp_get_group_permalink( $bp->groups->current_group ) . '">' . esc_attr( $bp->groups->current_group->name ) . '</a>';
-						//$activity_action  = sprintf( __( '%1$s shared in the group %2$s', 'buddypress'), bp_core_get_userlink($post_data['userid']), '<a href="' . bp_get_group_permalink( $bp->groups->current_group ) . '">' . esc_attr( $bp->groups->current_group->name ) . '</a>' );
 						$content_filtered = apply_filters( 'groups_activity_new_update_content', $activity_content );
 						
 						$activity_id = groups_record_activity(array(
@@ -594,7 +600,7 @@ class JSON_API_BuddypressRead_Controller {
 					$oReturn->success->msg = __('Shared in group successfully.','aheadzen');
 				}else{ /*share to activity*/
 					// Record this on the user's profile
-					$activity_action = '<a href="'.$add_primary_link.'">'.$display_name[$post_data['userid']].'</a> shared <a href="'.$author_primary_link.'">'.$author_display_name.'</a>\'s post';
+					$activity_action = '<a href="'.$add_primary_link.'">'.$display_name[$post_data['userid']].'</a> shared <a href="'.$author_primary_link.'">'.$author_display_name.'</a>\'s '.$activity_action;
 					$add_content = apply_filters( 'bp_activity_new_update_content', $activity_content );
 					// Now write the values
 					$activity_id = bp_activity_add( array(
@@ -2707,6 +2713,18 @@ class JSON_API_BuddypressRead_Controller {
 					}
 				}
 			}
+			
+			$isGroupAdmin = $isMember = $isBanned = 0;
+			if($_GET['user_id']){
+				if($aGroup->creator_id==$_GET['user_id']){					
+					$isGroupAdmin = 1;
+				}
+				$isMember = groups_is_user_member($_GET['user_id'],$aGroup->id);
+				$isBanned = groups_is_user_banned($_GET['user_id'],$aGroup->id);
+			}
+			$oReturn->groupfields->is_admin = $isGroupAdmin;
+			$oReturn->groupfields->is_member = $isMember;
+			$oReturn->groupfields->is_banned = $isBanned;
 		}
 		
 		return $oReturn;
@@ -3054,7 +3072,15 @@ class JSON_API_BuddypressRead_Controller {
         else if (is_int($mGroupExists) && $mGroupExists !== true)
             return $this->error('groups', $mGroupExists);
 		
-		$aMembers = groups_get_group_members($this->groupid, $this->limit);
+		$page = $_GET['page'];
+		if(!$page){$page=1;}
+		$per_page = $_GET['per_page'];
+		if(!$per_page){$per_page=20;}
+		$arg = array();
+		$arg['group_id'] = $this->groupid;
+		$arg['per_page'] = $per_page;
+		$arg['page'] = $page;		
+		$aMembers = groups_get_group_members($arg);
 		
         if ($aMembers === false) {
             $oReturn->group_members = array();
@@ -3261,10 +3287,16 @@ class JSON_API_BuddypressRead_Controller {
         $aConfig['page'] = $this->page;
         $aConfig['per_page'] = $this->per_page;
         $aConfig['order'] = $this->order;
-        $aPosts = bp_forums_get_topic_posts($aConfig);
+		$response = bp_forums_get_topic_details($this->topicid);
+		$aPosts = bp_forums_get_topic_posts($aConfig);
 
         foreach ($aPosts as $oPost) {
-            $oReturn->posts[(int) $oPost->post_id]->topicid = (int) $oPost->topic_id;
+			$oReturn->posts[(int) $oPost->post_id]->topicid = (int) $oPost->topic_id;
+			$oReturn->posts[(int) $oPost->post_id]->topic_title = $response->topic_title;
+			$oReturn->posts[(int) $oPost->post_id]->topic_slug = $response->topic_slug;
+			$oReturn->posts[(int) $oPost->post_id]->forum_name = $response->object_name;
+			$oReturn->posts[(int) $oPost->post_id]->forum_slug = $response->object_slug;
+			
             $oUser = get_user_by('id', (int) $oPost->poster_id);
             $oReturn->posts[(int) $oPost->post_id]->poster->poster_id = $oPost->poster_id;
 			$oReturn->posts[(int) $oPost->post_id]->poster->username = $oUser->data->user_login;
