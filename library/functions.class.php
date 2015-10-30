@@ -25,10 +25,10 @@ class BUDDYPRESS_JSON_API_FUNCTION extends JSON_API_BuddypressRead_Controller {
     }
 
     private function checkModuleActive($sModule) {
-        if ($sModule != 'notifications' && !key_exists($sModule, bp_get_option('bp-active-components'))) {
-            if ($sModule == 'forums')
-                if (!function_exists("bbp_version"))
-                    return false;
+		if ($sModule != 'notifications' && !key_exists($sModule, bp_get_option('bp-active-components'))) {
+            if ($sModule == 'forums'){
+                if (function_exists("bbp_is_group_forums_active") && bbp_is_group_forums_active()){return true;}
+			}
             return false;
         }
         return true;
@@ -89,20 +89,31 @@ class BUDDYPRESS_JSON_API_FUNCTION extends JSON_API_BuddypressRead_Controller {
     }
 
     protected static function groupforum_check_forum_existence() {
-        if (self::$sVars['forumid'] === false && self::$sVars['forumslug'] === false)
+		if (self::$sVars['forumid'] === false && self::$sVars['forumslug'] === false)
             return 4;
-        $oForum = bp_forums_get_forum(self::$sVars['forumid']);
-        if (is_null($oForum) || $oForum === false) {
-            $iForumId = bb_get_id_from_slug('forum', sanitize_title(self::$sVars['forumslug']));
+		
+		$oForum = bbp_get_forum(self::$sVars['forumid']);
+		if (is_null($oForum) || $oForum === false) {
+			
+			if(function_exists('bb_get_id_from_slug')){
+				$iForumId = bb_get_id_from_slug('forum', sanitize_title(self::$sVars['forumslug']));
+			}else{
+			global $wpdb;
+				$in_string =  sanitize_title(self::$sVars['forumslug']);
+				$post_type_in_string = bbp_get_forum_post_type();
+				$sql = "SELECT ID FROM $wpdb->posts WHERE post_name IN (\"$in_string\") AND post_type IN (\"$post_type_in_string\")";
+				$iForumId = $wpdb->get_var($sql);
+			}
+			
             if ($iForumId === 0)
                 return 5;
             else {
                 self::$sVars['forumid'] = $iForumId;
             }
         } else {
-            self::$sVars['forumid'] = $oForum->id;
+            self::$sVars['forumid'] = $oForum->ID;
         }
-        $iGroupId = groups_get_id(sanitize_title(self::$sVars ['groupslug']));
+		$iGroupId = groups_get_id(sanitize_title(self::$sVars ['groupslug']));
         $oGroup = groups_get_group(array('group_id' => $iGroupId));
         if ($oGroup->status == 'private' && !$oGroup->is_member)
             return false;
@@ -139,20 +150,41 @@ class BUDDYPRESS_JSON_API_FUNCTION extends JSON_API_BuddypressRead_Controller {
     protected static function groupforum_check_topic_existence() {
         if (self::$sVars['topicid'] === false && self::$sVars['topicslug'] === false)
             return 6;
-        $oTopic = bp_forums_get_topic_details(self::$sVars['topicid']);
-        if (is_null($oTopic) || (int) $oTopic->topic_id != self::$sVars['topicid']) {
-            $iTopicId = bb_get_id_from_slug('topic', sanitize_title(self::$sVars['topicslug']));
-            if ($iTopicId === 0)
-                return 8;
-            else {
-                self::$sVars['topicid'] = $iTopicId;
-                $oTopic = bp_forums_get_topic_details(self::$sVars['topicid']);
+		
+		if(function_exists('bp_forums_get_topic_details')){
+			$oTopic = bp_forums_get_topic_details(self::$sVars['topicid']);
+		}elseif(function_exists('bbp_get_topic')){
+			$oTopic = bbp_get_topic(self::$sVars['topicid']);
+			if($oTopic){$oTopic->topic_id = $oTopic->ID;}
+		}
+		
+		if (is_null($oTopic) || (int) $oTopic->topic_id != self::$sVars['topicid']) {
+				if(function_exists('bb_get_id_from_slug')){
+					$iTopicId = bb_get_id_from_slug('topic', sanitize_title(self::$sVars['topicslug']));
+				}else{
+					global $wpdb;
+					$in_string =  sanitize_title(self::$sVars['topicslug']);
+					$post_type_in_string = bbp_get_topic_post_type();				
+					$sql = "SELECT ID FROM $wpdb->posts WHERE post_name IN (\"$in_string\") AND post_type IN (\"$post_type_in_string\")";
+					$iTopicId = $wpdb->get_var($sql);
+				}
+			
+			if ($iTopicId === 0){
+				return 8;
+            } else {
+				self::$sVars['topicid'] = $iTopicId;
+				global $wpdb;
+				$post_type_in_string = bbp_get_topic_post_type();
+				$oTopic = bbp_get_topic(self::$sVars['topicid']);
+				$oTopic = $wpdb->get_col("SELECT * FROM $wpdb->posts WHERE ID=\"$iTopicId\"");
             }
         }
         else
-            self::$sVars['topicid'] = $oTopic->id;
+            self::$sVars['topicid'] = $oTopic->ID;
+		
         if (is_null($oTopic))
             return false;
+		
         return true;
     }
 
