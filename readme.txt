@@ -400,3 +400,6 @@ so in wordpress you can retrieve like -- get_user_meta( $userid, 'bbp_cover_pic'
 
 =1.0.46 =
 * Error solved.
+
+=1.0.47 =
+* Topic , TOpic post & activity api changes.

@@ -25,6 +25,38 @@ class JSON_API_BuddypressRead_Controller {
 		}
 	}
 
+function messages_new_message(){
+	header("Access-Control-Allow-Origin: *");
+	$oReturn = new stdClass();
+	$oReturn->success = '';
+	$oReturn->error = '';
+	if(!$_POST){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
+	if(!$_POST['subject']){$oReturn->message = __('Empty Subject.','aheadzen'); return $oReturn;}
+	if(!$_POST['content']){$oReturn->message = __('Empty Content.','aheadzen'); return $oReturn;}
+	if(!$_POST['sender_id']){$oReturn->message = __('Wrong sender id try.','aheadzen'); return $oReturn;}
+	if(!$_POST['recipients']){$oReturn->message = __('Wrong Recipients.','aheadzen'); return $oReturn;}
+	
+	$recipients = $_POST['recipients'];
+	$recipientsArr = explode(',',$recipients);
+	$recipients1 = array();
+	$username = array();
+	if($recipientsArr){
+		foreach($recipientsArr as $key => $val){
+			$recipients1[] = trim(str_replace('@','',$val));
+		}
+	}
+	$recipients = $recipients1;
+	
+	$result = messages_new_message( array('subject'=>$_POST['subject'], 'content' => $_POST['content'], 'sender_id' => $_POST['sender_id'], 'recipients' => $recipients ) );
+	if(!empty( $result )){
+		$oReturn->success->msg = __('Message added successfully.','aheadzen');
+		$oReturn->success->id = $result;
+	}else{
+		$oReturn->error = __('Message add error.','aheadzen');
+	}
+	//echo '<pre>';print_r($oReturn);
+	return $oReturn;
+}
 public function users_spam_user() {	
 	header("Access-Control-Allow-Origin: *");
 	$oReturn = new stdClass();
@@ -1724,9 +1756,11 @@ public function bbp_api_new_topic_handler() {
 		global $wpdb,$table_prefix;
 		
 		$keyword = trim($_GET['keyword']);
+		$per_page = trim($_GET['per_page']);
+		if(!$per_page){$per_page=3;}
 		$counter=0;
 		if($keyword){
-			$sql = "select ID,user_login,display_name from ".$table_prefix."users where user_login not like \"%@%\" and (user_login like \"$keyword%\" || display_name like \"$keyword%\") order by user_login limit 10";
+			$sql = "select ID,user_login,display_name from ".$table_prefix."users where user_login not like \"%@%\" and (user_login like \"$keyword%\" || display_name like \"$keyword%\") order by user_login limit $per_page";
 			$res = $wpdb->get_results($sql);
 			if($res){
 				foreach($res as $resobj){
@@ -2862,11 +2896,11 @@ public function bbp_api_new_topic_handler() {
 							$total_votes = $votes->total_votes;
 							$total_up = $votes->total_up;
 							$total_down = $votes->total_down;
-							$uplink = $votes->post_voter_links->up;
-							$downlink = $votes->post_voter_links->down;
+							//$uplink = $votes->post_voter_links->up;
+							//$downlink = $votes->post_voter_links->down;
 							}
-							if($_GET['userid']){
-								$user_id = $oActivity->user_id;
+							if($_GET['currentUserId']){
+								$user_id = $_GET['currentUserId'];
 								$secondary_item_id = $oActivity->id;
 								$type = 'activity';
 								$item_id = 0;
@@ -2878,8 +2912,8 @@ public function bbp_api_new_topic_handler() {
 						$oReturn->activities[$acounter]->vote->total_votes = $total_votes;
 						$oReturn->activities[$acounter]->vote->total_up = $total_up;
 						$oReturn->activities[$acounter]->vote->total_down = $total_down;
-						$oReturn->activities[$acounter]->vote->uplink = $uplink;
-						$oReturn->activities[$acounter]->vote->downlink = $downlink;
+						//$oReturn->activities[$acounter]->vote->uplink = $uplink;
+						//$oReturn->activities[$acounter]->vote->downlink = $downlink;
 						$oReturn->activities[$acounter]->vote->action = $voteed_action;
 						$oReturn->activities[$acounter]->multiActivity = 0;
 					
@@ -2889,10 +2923,6 @@ public function bbp_api_new_topic_handler() {
 							foreach($oActivity->children as $childoActivity){
 							$childuser = new BP_Core_User($childoActivity->user_id);
 							if($childuser && $childuser->avatar){
-								/*if($childuser->avatar){
-									preg_match_all('/(src)=("[^"]*")/i',$childuser->avatar, $user_avatar_result);
-									$childoActivity->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
-								}*/
 								if($childuser->avatar_thumb){
 									preg_match_all('/(src)=("[^"]*")/i',$childuser->avatar_thumb, $user_avatar_result);
 									$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
@@ -2937,22 +2967,21 @@ public function bbp_api_new_topic_handler() {
 								$uplink = $votes->post_voter_links->up;
 								$downlink = $votes->post_voter_links->down;
 								
-								if($_GET['userid']){
-									$user_id = $childoActivity->user_id;
+								if($_GET['currentUserId']){
+									$user_id = $_GET['currentUserId'];
 									$secondary_item_id = $childoActivity->id;
-									$type = $childoActivity->type;
+									$type = 'activity';
 									$item_id = 0;
 									$component = 'buddypress';
-									$voteed_action = $wpdb->get_var("SELECT action FROM `".$table_prefix."ask_votes` WHERE user_id=\"$user_id\" AND item_id=\"$item_id\" AND component=\"$component\" AND type=\"$type\" AND secondary_item_id=\"$secondary_item_id\"");
-									
+									$voteed_action = $wpdb->get_var("SELECT action FROM `".$table_prefix."ask_votes` WHERE user_id=\"$user_id\" AND component=\"$component\" AND type=\"$type\" AND secondary_item_id=\"$secondary_item_id\"");
 								}
 							}
 							
 							$oReturn->activities[$acounter]->children->$counter->vote->total_votes = $total_votes;
 							$oReturn->activities[$acounter]->children->$counter->vote->total_up = $total_up;
 							$oReturn->activities[$acounter]->children->$counter->vote->total_down = $total_down;
-							$oReturn->activities[$acounter]->children->$counter->vote->uplink = $uplink;
-							$oReturn->activities[$acounter]->children->$counter->vote->downlink = $downlink;
+							//$oReturn->activities[$acounter]->children->$counter->vote->uplink = $uplink;
+							//$oReturn->activities[$acounter]->children->$counter->vote->downlink = $downlink;
 							$oReturn->activities[$acounter]->children->$counter->vote->action = $voteed_action;
 							
 							$counter++;
@@ -3250,7 +3279,10 @@ public function bbp_api_new_topic_handler() {
 		$oReturn->error = '';
 		
 		if(!$_GET['userid']){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
-		$user_id = $_GET['userid'];
+		$user_id = $_GET['userid'];	
+		global $bp,$current_user;
+		wp_set_current_user($user_id);
+		do_action('bp_init');
 		
 		$page = $_GET['page'];
 		$per_page = $_GET['per_page'];
@@ -3269,8 +3301,7 @@ public function bbp_api_new_topic_handler() {
 		$counter = 0;
 		$isNewCounter = 0;
 		$userDataArr = array();
-		global $bp;
-        foreach ($aNotifications as $sNotificationMessage) {
+		foreach ($aNotifications as $sNotificationMessage) {
 			if($sNotificationMessage->content){
 				$content = $sNotificationMessage->content;
 			}else{
@@ -3286,6 +3317,7 @@ public function bbp_api_new_topic_handler() {
 					$content = apply_filters_ref_array( 'bp_notifications_get_notifications_for_user', array( $notification->component_action, $notification->item_id, $notification->secondary_item_id, 1 ) );
 				}
 			}
+			
 			if($content){
 				$oReturn->notifications[$counter]->id = $sNotificationMessage->id;
 				$oReturn->notifications[$counter]->item_id = $sNotificationMessage->item_id;
@@ -3359,6 +3391,7 @@ public function bbp_api_new_topic_handler() {
 			}
 		}
 		
+		//echo '<pre>';print_r($oReturn);
 		return $oReturn;
     }
 
@@ -3485,7 +3518,8 @@ public function bbp_api_new_topic_handler() {
             $oReturn->groupfields->slug = $aGroup->slug;
             $oReturn->groupfields->is_forum_enabled = $aGroup->enable_forum == "1" ? true : false;
             $oReturn->groupfields->date_created = $aGroup->date_created;
-            $oReturn->groupfields->count_member = $aGroup->total_member_count;
+			$total_member_count = groups_get_groupmeta($aGroup->id,'total_member_count');
+            $oReturn->groupfields->count_member = $total_member_count;
 			
 			$avatar_url = bp_core_fetch_avatar(array('object'=>'group','item_id'=>$aGroup->id, 'html'=>false, 'type'=>'full'));
 			if($avatar_url && !strstr($avatar_url,'http:')){ $avatar_url = 'http:'.$avatar_url;}
@@ -3895,10 +3929,27 @@ public function bbp_api_new_topic_handler() {
 				$oReturn->group_members[$counter]->registered = $aMember->user_registered;
 				$oReturn->group_members[$counter]->last_activity = $aMember->last_activity;
 				$oReturn->group_members[$counter]->friend_count = $aMember->total_friend_count;
-				$avatar_url = bp_core_fetch_avatar(array('object'=>'user','item_id'=>$aMember->user_id, 'html'=>false, 'type'=>'full'));
-				if($avatar_url && !strstr($avatar_url,'http:')){ $avatar_url = 'http:'.$avatar_url;}
-				$oReturn->group_members[$counter]->avatar = $avatar_url;
+				//$avatar_url = bp_core_fetch_avatar(array('object'=>'user','item_id'=>$aMember->user_id, 'html'=>false, 'type'=>'full'));
+				//if($avatar_url && !strstr($avatar_url,'http:')){ $avatar_url = 'http:'.$avatar_url;}
+				//$oReturn->group_members[$counter]->avatar = $avatar_url;
 				
+				$user = new BP_Core_User($aMember->user_id);
+				if($user && $user->avatar){
+					if($user->avatar_thumb){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+						if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+						$oReturn->group_members[$counter]->avatar = $avatar_thumb;
+					}
+				}				
+				$profile_data = $user->profile_data;
+				if($profile_data){
+					foreach($profile_data as $sFieldName => $val){
+						if(is_array($val)){
+							$oReturn->group_members[$counter]->$sFieldName = $val['field_data'];
+						}
+					}
+				}				
 				if(function_exists('bp_follow_total_follow_counts')){
 					$oReturn->group_members[$counter]->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' => $aMember->user_id ) );
 				}
@@ -4052,13 +4103,16 @@ public function bbp_api_new_topic_handler() {
 				if ($this->detailed === true) {
 					$oUserTopic = $oUser;
 					$last_reply_id = bbp_get_topic_last_reply_id($tid);
-					$reply = bbp_get_reply($last_reply_id);
+					if($last_reply_id){
+						$reply = bbp_get_reply($last_reply_id);
+					}
 					$oUser = get_user_by('id', $reply->post_author);
 					if(!$oUser){
 						$replyUser = $uid;
 						$oUser = $oUserTopic; 
-					}					
-					$oReturn->topics[(int)$tid]->last_poster->ID = $replyUser;
+					}
+					
+					$oReturn->topics[(int)$tid]->last_poster->ID = $reply->post_author;
 					$oReturn->topics[(int)$tid]->last_poster->username = $oUser->data->user_login;
 					$oReturn->topics[(int)$tid]->last_poster->mail = $oUser->data->user_email;
 					$oReturn->topics[(int)$tid]->last_poster->display_name = $oUser->data->display_name;
@@ -4143,12 +4197,55 @@ public function bbp_api_new_topic_handler() {
 		$oForum = bbp_get_forum($response->post_parent);
 		
 		$oReturn->topic->topicid = (int)$this->topicid;
-		$oReturn->topic->title = $response->post_title;
-		$oReturn->topic->content = $response->post_content;
+		//$oReturn->topic->title = $response->post_title;
+		//$oReturn->topic->content = $response->post_content;
 		$oReturn->topic->slug = $response->post_name;
 		$oReturn->topic->forum_name = $oForum->post_title;
 		$oReturn->topic->forum_slug = $oForum->post_name;
 		
+		$oReturn->topic->title = stripcslashes($response->post_title);
+		$oReturn->topic->content = stripcslashes($response->post_content);
+		$oReturn->topic->slug = $response->post_name;
+		$oUser = new BP_Core_User($response->post_author);
+		$oReturn->topic->poster->ID = $oUser->id;
+		$oReturn->topic->poster->username = $oUser->profile_data['user_login'];
+		$oReturn->topic->poster->mail = $oUser->profile_data['user_email'];
+		$oReturn->topic->poster->display_name = $oUser->profile_data['Name']['field_data'];
+		$oReturn->topic->post_count = (int) bbp_get_topic_post_count($this->topicid);
+		$oReturn->topic->start_time = $response->post_date;
+		if($oUser && $oUser->avatar_thumb){
+			if($oUser->avatar_thumb){
+				preg_match_all('/(src)=("[^"]*")/i',$oUser->avatar_thumb, $user_avatar_result);
+				$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+				if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+				$oReturn->topic->poster->avatar = $avatar_thumb;
+			}
+		}
+		
+		$oUserTopic = $oUser;
+		$last_reply_id = bbp_get_topic_last_reply_id($this->topicid);
+		if($last_reply_id){
+			$reply = bbp_get_reply($last_reply_id);
+		}
+		$oUser = new BP_Core_User($reply->post_author);
+		if(!$oUser){
+			$replyUser = $uid;
+			$oUser = $oUserTopic; 
+		}
+		
+		$oReturn->topic->last_poster->ID = $oUser->id;
+		$oReturn->topic->last_poster->username = $oUser->profile_data['user_login'];
+		$oReturn->topic->last_poster->mail = $oUser->profile_data['user_email'];
+		$oReturn->topic->last_poster->display_name = $oUser->profile_data['Name']['field_data'];
+		
+		if($oUser && $oUser->avatar){
+			if($oUser->avatar_thumb){
+				preg_match_all('/(src)=("[^"]*")/i',$oUser->avatar_thumb, $user_avatar_result);
+				$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+				if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+				$oReturn->topic->last_poster->avatar = $avatar_thumb;
+			}
+		}
 		$aConfig['post_type'] = bbp_get_reply_post_type();
 		$aConfig['post_parent'] = $this->topicid;
 		$aConfig['posts_per_page'] = $this->per_page;
@@ -4160,19 +4257,22 @@ public function bbp_api_new_topic_handler() {
 		if(bbp_has_replies($aConfig)){
 			while(bbp_replies()){
 				bbp_the_reply();
-				/*$oReturn->posts[(int) $post->ID]->topicid = (int)$this->topicid;
-				$oReturn->posts[(int) $post->ID]->topic_title = $response->topic_title;
-				$oReturn->posts[(int) $post->ID]->topic_slug = $response->topic_slug;
-				$oReturn->posts[(int) $post->ID]->forum_name = $oForum->post_title;
-				$oReturn->posts[(int) $post->ID]->forum_slug = $oForum->post_name;
-				*/
-				$oUser = get_user_by('id', (int) $post->post_author);
+				$oUser = new BP_Core_User($post->post_author);
+				//$oUser = get_user_by('id', (int) $post->post_author);
 				$oReturn->posts[(int) $post->ID]->poster->poster_id = $post->post_author;
-				$oReturn->posts[(int) $post->ID]->poster->username = $oUser->data->user_login;
-				$oReturn->posts[(int) $post->ID]->poster->mail = $oUser->data->user_email;
-				$oReturn->posts[(int) $post->ID]->poster->display_name = $oUser->data->display_name;
+				$oReturn->posts[(int) $post->ID]->poster->username = $oUser->profile_data['user_login'];
+				$oReturn->posts[(int) $post->ID]->poster->mail = $oUser->profile_data['user_email'];
+				$oReturn->posts[(int) $post->ID]->poster->display_name = $oUser->profile_data['Name']['field_data'];
 				$oReturn->posts[(int) $post->ID]->post_text = stripcslashes($post->post_content);
 				$oReturn->posts[(int) $post->ID]->post_time = $post->post_date;
+				if($oUser && $oUser->avatar){
+					if($oUser->avatar_thumb){
+						preg_match_all('/(src)=("[^"]*")/i',$oUser->avatar_thumb, $user_avatar_result);
+						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+						if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+						$oReturn->posts[(int) $post->ID]->poster->avatar = $avatar_thumb;
+					}
+				}
 				
 				$total_votes = $total_up = $total_down = 0;
 				$uplink = $downlink = '#';
