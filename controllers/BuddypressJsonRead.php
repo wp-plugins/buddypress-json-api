@@ -25,6 +25,90 @@ class JSON_API_BuddypressRead_Controller {
 		}
 	}
 
+function users_by_dob_zodiac(){
+	header("Access-Control-Allow-Origin: *");
+	$oReturn = new stdClass();
+	$oReturn->success = '';
+	$oReturn->error = '';
+	//if(!$_GET['zodiac']){$oReturn->message = __('Wrong Zodiac.','aheadzen'); return $oReturn;}
+	$zodiac = $_GET['zodiac'];
+	global $wpdb,$table_prefix;
+	if($zodiac){
+		$zodiacDateArr = array();
+		$zodiacDateArr['aries']=array('03-21','04-20');
+		$zodiacDateArr['taurus']=array('04-21','05-21');
+		$zodiacDateArr['gemini']=array('05-22','06-21');
+		$zodiacDateArr['cancer']=array('06-22','07-22');
+		$zodiacDateArr['leo']=array('07-23','08-22');
+		$zodiacDateArr['virgo']=array('08-23','09-22');
+		$zodiacDateArr['libra']=array('09-23','10-22');
+		$zodiacDateArr['scorpio']=array('10-23','11-21');
+		$zodiacDateArr['sagittarius']=array('11-22','12-21');
+		$zodiacDateArr['capricorn']=array('12-22','01-20');
+		$zodiacDateArr['aquarius']=array('01-21','02-19');
+		$zodiacDateArr['pisces']=array('02-20','03-20');
+		
+		$zodiac_date = $zodiacDateArr[$zodiac];
+		if($zodiac_date){
+			$sql = "SELECT user_id FROM ".$table_prefix."usermeta WHERE meta_key = 'birthday' AND STR_TO_DATE(meta_value, '%e-%c') BETWEEN '0000-".$zodiac_date[0]."' AND '0000-".$zodiac_date[1]."' ORDER  BY user_id DESC LIMIT 50";
+			$users = $wpdb->get_col($sql);
+			if($users){
+				$zodiacMatchCounter = 0;
+				for($u=0;$u<count($users);$u++){
+					if(bp_get_user_has_avatar($users[$u])){
+						$user = new BP_Core_User($users[$u]);
+						if($user->avatar_thumb){
+							preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+							$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+							if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+						}					
+						if($user->user_url){
+							$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
+						}
+						$oReturn->zodiacmatch[$u]->id = $user->id;
+						$oReturn->zodiacmatch[$u]->username = $username;
+						$oReturn->zodiacmatch[$u]->fullname = $user->fullname;
+						$oReturn->zodiacmatch[$u]->last_active = $user->last_active;
+						$oReturn->zodiacmatch[$u]->avatar_thumb = $avatar_thumb;
+						$oReturn->zodiacmatch[$u]->dob = get_user_meta($user->id,'birthday',true);
+						$zodiacMatchCounter++;
+						if($zodiacMatchCounter==4){break;}
+					}
+				}
+			}
+		}
+	}
+	if($_GET['dobOn']){
+		$sql = "SELECT user_id FROM ".$table_prefix."usermeta WHERE meta_key = 'birthday' AND DATE_FORMAT(STR_TO_DATE(meta_value, '%e-%c'),'%m-%d') = DATE_FORMAT('".$_GET['dobOn']."','%m-%d') ORDER  BY user_id DESC LIMIT 50";
+		$dobusers = $wpdb->get_col($sql);
+		if($dobusers){
+			$dobMatchCounter = 0;
+			for($du=0;$du<count($dobusers);$du++){
+				if(bp_get_user_has_avatar($dobusers[$du])){
+					$user = new BP_Core_User($dobusers[$du]);
+					if($user->avatar_thumb){
+						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+						if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+					}					
+					if($user->user_url){
+						$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
+					}
+					$oReturn->dobmatch[$du]->id = $user->id;
+					$oReturn->dobmatch[$du]->username = $username;
+					$oReturn->dobmatch[$du]->fullname = $user->fullname;
+					$oReturn->dobmatch[$du]->last_active = $user->last_active;
+					$oReturn->dobmatch[$du]->avatar_thumb = $avatar_thumb;
+					$oReturn->dobmatch[$du]->dob = get_user_meta($user->id,'birthday',true);
+					$dobMatchCounter++;
+					if($dobMatchCounter==4){break;}
+			}
+			}
+		}
+	}
+	
+	return $oReturn;
+}
 function messages_new_message(){
 	header("Access-Control-Allow-Origin: *");
 	$oReturn = new stdClass();
@@ -1070,6 +1154,13 @@ public function bbp_api_new_topic_handler() {
 		$oReturn->success = '';
 		$oReturn->error = '';
 		if(!$_GET['userid']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
+		$perpage = $_GET['perpage'];
+		$thepage = $_GET['thepage'];
+		if(!$perpage){$perpage=20;}
+		if(!$thepage){$thepage=1;}
+		$starter = $perpage*($thepage-1);
+		$laster = $perpage*($thepage);
+		
 		$files = array();
 		$bp_upload = xprofile_avatar_upload_dir('',$_GET['userid']);		
 		$basedir = $bp_upload['path'];
@@ -1080,9 +1171,11 @@ public function bbp_api_new_topic_handler() {
 			if($filename=='.' || $filename=='..'){				
 			}else{
 				if(file_exists($basedir.'/'.$filename)){
-					$oReturn->images[$counter]->src = $baseurl.'/'.$filename;
-					$oReturn->images[$counter]->sub = '';
-					//$files[] = $baseurl.'/'.$filename;
+					if($counter>=$starter && $counter<$laster){
+						$oReturn->images[$counter]->src = $baseurl.'/'.$filename;
+						$oReturn->images[$counter]->sub = '';
+					}
+					if($counter>$laster){break;}
 					$counter++;
 				}
 			}
@@ -1139,9 +1232,9 @@ public function bbp_api_new_topic_handler() {
 		
 	}
 	/*
-	Share to Users -- http://localhost/api/buddypressread/share_the_link/?id=19&ptype=post&userid=1&shareto=user&sharetouser=@buyer1,@chynna,@testuser5
-	Share to Activity -- http://localhost/api/buddypressread/share_the_link/?id=19&ptype=post&userid=1
-	Share to Group -- http://localhost/api/buddypressread/share_the_link/?id=19&ptype=post&userid=1&shareto=group&sharetogroup=1
+	Share to Users -- http://localhost/api/buddypressread/share_activity_data/?id=19&ptype=post&userid=1&shareto=user&sharetouser=@buyer1,@chynna,@testuser5
+	Share to Activity -- http://localhost/api/buddypressread/share_activity_data/?id=19&ptype=post&userid=1
+	Share to Group -- http://localhost/api/buddypressread/share_activity_data/?id=19&ptype=post&userid=1&shareto=group&sharetogroup=1
 	id = post id, page id, forum topic id.....
 	ptype = post type like post, page,forum topic 
 	userid = poster user id/current logged user id
@@ -1311,6 +1404,7 @@ public function bbp_api_new_topic_handler() {
 			$activity_content = $response->topic_title;
 			$activity_action = 'topic <a href="'.$topicURL.'">'.$response->topic_title.'</a> of group <a href="'.$groupURL.'">'.$response->object_name.'</a>';
 		}
+		
 		if($post_data['title'] && $post_data['author_id']){	
 				$image_src = '';				
 				if(has_post_thumbnail($pid)){
@@ -1331,6 +1425,7 @@ public function bbp_api_new_topic_handler() {
 						}
 					}
 				}
+				
 				if($post_data['image']==''){
 					preg_match('/<img.+src=[\'"](?P<src>.+)[\'"].*>/i', $post_data['the_content'], $image);
 					if($image['src']){
@@ -1341,15 +1436,16 @@ public function bbp_api_new_topic_handler() {
 				
 				if($post_data['bpfb_url']){
 					$BpfbCodec = new BpfbCodec();
+					if($post_data['mentions']){$post_data['mentions'] = $post_data['mentions'].' ';}
 					$activity_content = $post_data['mentions'].$BpfbCodec->create_link_tag($post_data['bpfb_url'],$post_data['title'],$post_data['text'],$post_data['image']);		
 				}
+				
 				$display_name = bp_core_get_user_displaynames($post_data['userid']);
 				$primary_link     = bp_core_get_userlink($post_data['userid'], false, true );
 				$add_primary_link = apply_filters( 'bp_activity_new_update_primary_link', $primary_link );
 				$author_display_name = bp_core_get_user_displaynames($post_data['author_id']);
 				$author_primary_link     = bp_core_get_userlink($post_data['author_id'], false, true );
 				$author_display_name = $author_display_name[$post_data['author_id']];
-				
 				if($post_data['sharetogroup']){ /*share to group*/
 					$bp = buddypress();
 					$bp->groups->current_group = groups_get_group(array('group_id' =>$post_data['sharetogroup']));
@@ -1377,14 +1473,18 @@ public function bbp_api_new_topic_handler() {
 					$activity_action = '<a href="'.$add_primary_link.'">'.$display_name[$post_data['userid']].'</a> shared <a href="'.$author_primary_link.'">'.$author_display_name.'</a>\'s '.$activity_action;
 					$add_content = apply_filters( 'bp_activity_new_update_content', $activity_content );
 					// Now write the values
-					$activity_id = bp_activity_add( array(
+					
+					$activityArgs = array(
 						'user_id'      => $post_data['userid'],
 						'content'      => $add_content,
 						'primary_link' => $add_primary_link,
 						'component'    => buddypress()->activity->id,
 						'type'         => 'activityshare',
 						'action'       => $activity_action,
-					) );
+					);
+					
+					$activity_id = bp_activity_add($activityArgs);
+					
 					$activity_content = apply_filters( 'bp_activity_latest_update_content', $post_data['text'], $activity_content );
 					bp_update_user_meta($post_data['userid'], 'bp_latest_update', array(
 						'id'      => $activity_id,
@@ -1475,9 +1575,25 @@ public function bbp_api_new_topic_handler() {
 	 * Handles link preview requests.
 	 */
 	function activity_preview_link () {
-		$_POST['data']=urldecode($_GET['data']);
-		$BpfbBinder = new BpfbBinder();
-		return $BpfbBinder->ajax_preview_link();
+		if($_GET['data']){
+			$info = new SplFileInfo($_GET['data']);
+			if($info){
+				$fileExt = strtolower($info->getExtension());
+				$imageExtArr = array('jpg','jpeg','png','gif');
+				if(in_array($fileExt,$imageExtArr)){
+					echo json_encode(array(
+						"url" => $_GET['data'],
+						"images" => array($_GET['data']),
+						"title" => '',
+						"text" => '',
+					));exit;
+				}else{
+					$_POST['data']=urldecode($_GET['data']);
+					$BpfbBinder = new BpfbBinder();
+					return $BpfbBinder->ajax_preview_link();
+				}
+			}			
+		}
 	}
 	
 	public function activity_set_bpfb_url()
@@ -1798,63 +1914,69 @@ public function bbp_api_new_topic_handler() {
 		$bp_members = array();
 		$member_data = array();
 		$subsql = '';
-		global $wpdb,$table_prefix;		
+		global $bp,$wpdb,$table_prefix;		
 		$keyword = trim($_GET['keyword']);
 		$thepage = $_GET['thepage'];
 		$limit = $_GET['limit'];
+		$withphoto = $_GET['withphoto'];
 		if(!$thepage){$thepage=0;}
 		if(!$limit){$limit=10;}
 		$start = $thepage*$limit;
-		//if($keyword==''){ $oReturn->error = __('Please enter keyword to search.','aheadzen'); return $oReturn;}		
-		if($keyword){ $subsql = " AND MATCH (value) AGAINST('".$keyword."*' IN BOOLEAN MODE) "; }		
-		$sql = "select DISTINCT(user_id) from ".$table_prefix."bp_xprofile_data where 1 $subsql  limit $start, $limit";
+		if($keyword){
+			$sql = "select DISTINCT(user_id),MATCH (value) AGAINST('".$keyword."' IN BOOLEAN MODE) as score from ".$table_prefix."bp_xprofile_data HAVING score > 0 ORDER BY score DESC limit $start, $limit";
+			//$subsql = " AND MATCH (value) AGAINST('".$keyword."*' IN BOOLEAN MODE) ";
+		}else{
+			$sql = "select DISTINCT(user_id) from ".$table_prefix."bp_xprofile_data where 1 $subsql limit $start, $limit";
+		}
 		$members = $wpdb->get_col($sql) or die(mysql_error());
+		
 		if($members){
 			$counter = 0;
 			for($m=0;$m<count($members);$m++){
 				$uid = $members[$m];
-				$user = new BP_Core_User($uid);
-				
-				if($user){
-					$username = $avatar_big = $avatar_thumb = '';
-					if($user->user_url){
-						$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
-					}
-					if($user->avatar){
-						preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
-						$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
-						if($avatar_big && !strstr($avatar_big,'http:')){ $avatar_big = 'http:'.$avatar_big;}
-					}
-					if($user->avatar_thumb){
-						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
-						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
-						if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
-					}					
-					$oReturn->members[$counter]->id 		= $user->id;
-					$oReturn->members[$counter]->username 	= $username;
-					$oReturn->members[$counter]->fullname 	= $user->fullname;
-					$oReturn->members[$counter]->email 		= $user->email;
-					//$oReturn->members[$counter]->user_url 	= $user->user_url;
-					$oReturn->members[$counter]->last_active= $user->last_active;
-					//$oReturn->members[$counter]->avatar_big = $avatar_big;
-					$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
-					
-					$profile_data = $user->profile_data;
-					if($profile_data){
-						foreach($profile_data as $sFieldName => $val){
-							if(is_array($val)){
-								$oReturn->members[$counter]->$sFieldName = $val['field_data'];
+				if((bp_get_user_has_avatar($uid) && $withphoto) || !$withphoto){
+					$user = new BP_Core_User($uid);					
+					if($user){
+						$username = $avatar_big = $avatar_thumb = '';
+						if($user->user_url){
+							$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
+						}
+						if($user->avatar){
+							preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+							$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+							if($avatar_big && !strstr($avatar_big,'http:')){ $avatar_big = 'http:'.$avatar_big;}
+						}
+						if($user->avatar_thumb){
+							preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+							$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+							if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+						}					
+						$oReturn->members[$counter]->id 		= $user->id;
+						$oReturn->members[$counter]->username 	= $username;
+						$oReturn->members[$counter]->fullname 	= $user->fullname;
+						$oReturn->members[$counter]->email 		= $user->email;
+						//$oReturn->members[$counter]->user_url 	= $user->user_url;
+						$oReturn->members[$counter]->last_active= $user->last_active;
+						//$oReturn->members[$counter]->avatar_big = $avatar_big;
+						$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
+						
+						$profile_data = $user->profile_data;
+						if($profile_data){
+							foreach($profile_data as $sFieldName => $val){
+								if(is_array($val)){
+									$oReturn->members[$counter]->$sFieldName = $val['field_data'];
+								}
 							}
 						}
+						if(function_exists('bp_follow_total_follow_counts')){
+							$oReturn->members[$counter]->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' => $user->id ) );
+						}
+						$oReturn->members[$counter]->is_following = 0;
+						if(function_exists('bp_follow_is_following') && bp_follow_is_following(array('leader_id'=>$user->id,'follower_id'=>$_GET['userid']))){
+							$oReturn->members[$counter]->is_following = 1;
+						}
+						$counter++;
 					}
-					if(function_exists('bp_follow_total_follow_counts')){
-						$oReturn->members[$counter]->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' => $user->id ) );
-					}
-					$oReturn->members[$counter]->is_following = 0;
-					if(function_exists('bp_follow_is_following') && bp_follow_is_following(array('leader_id'=>$user->id,'follower_id'=>$_GET['userid']))){
-						$oReturn->members[$counter]->is_following = 1;
-					}
-					$counter++;
 				}
 			}			
 			
@@ -2427,11 +2549,16 @@ public function bbp_api_new_topic_handler() {
 			$iPages = $this->pages;
 		}
 		
-		$aTempActivities = bp_activity_get($aParams);
+		//$aTempActivities = bp_activity_get($aParams);		
+		//if (!empty($aTempActivities['activities'])) {
 		$theActivityGroup = array();
-		if (!empty($aTempActivities['activities'])) {
+		global $activities_template;
+		if (bp_has_activities($aParams)){
 			$acounter=0;
-			foreach ($aTempActivities['activities'] as $oActivity) {
+			while ( bp_activities() ){
+				bp_the_activity(); 
+				$oActivity =  $activities_template->activity;
+				$oActivity->content = bp_get_activity_content_body();
 				if($oActivity->component=='votes' || $oActivity->type=='joined_group'){ }else{
 					if($oActivity->type=='updated_profile' || $oActivity->type=='new_avatar'){
 						$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->user_id][0] = $oActivity;
@@ -2440,13 +2567,27 @@ public function bbp_api_new_topic_handler() {
 							$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][] = $oActivity;
 						}else{
 							$randVar = time().rand(1,10000);
-							//$randVar = $oActivity->date_recorded.$oActivity->id;
 							$theActivityGroup[$oActivity->component][$oActivity->type][$randVar][] = $oActivity;
 						}							
 					}
 				}
-			}
 				
+			}
+			/*foreach ($aTempActivities['activities'] as $oActivity) {
+				if($oActivity->component=='votes' || $oActivity->type=='joined_group'){ }else{
+					if($oActivity->type=='updated_profile' || $oActivity->type=='new_avatar'){
+						$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->user_id][0] = $oActivity;
+					}else{
+						if($oActivity->type=='save_chart' || $oActivity->type=='new_member' || $theAct->type=='joined_group'){
+							$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][] = $oActivity;
+						}else{
+							$randVar = time().rand(1,10000);
+							$theActivityGroup[$oActivity->component][$oActivity->type][$randVar][] = $oActivity;
+						}							
+					}
+				}
+			}*/
+			
 			$activityFinalArr = array();
 			if($theActivityGroup){
 				foreach($theActivityGroup as $activityCompArr){
@@ -2539,7 +2680,6 @@ public function bbp_api_new_topic_handler() {
 					}
 				}
 			}
-			
 			if(!$activityFinalArr){return $oReturn;}
 			for($a=0;$a<count($activityFinalArr);$a++){
 				$oActivity = $activityFinalArr[$a];
@@ -2569,6 +2709,13 @@ public function bbp_api_new_topic_handler() {
 					$oReturn->activities[$acounter]->time = $oActivity->date_recorded;
 					$oReturn->activities[$acounter]->multiActivity = $oActivity->multiActivity;
 					
+					$oReturn->activities[$acounter]->user->is_following = 0;
+					if($_GET['currentUserId'] &&  $oActivity->user_id==$_GET['currentUserId']){
+						$oReturn->activities[$acounter]->user->is_following = 1;
+					}elseif(function_exists('bp_follow_is_following') && bp_follow_is_following(array('leader_id'=>$oActivity->user_id,'follower_id'=>$_GET['currentUserId']))){
+						$oReturn->activities[$acounter]->user->is_following = 1;
+					}
+					
 					if($oActivity->type=='new_avatar'){
 						$oActivity->action = 'Changed their profile picture. <br /><img src="'.$oActivity->avatar_thumb.'" alt="" />';
 					}else if($oActivity->type=='updated_profile'){
@@ -2588,7 +2735,11 @@ public function bbp_api_new_topic_handler() {
 					$oReturn->activities[$acounter]->content = stripcslashes($oActivity->content);
 					$oReturn->activities[$acounter]->is_hidden = $oActivity->hide_sitewide === "0" ? false : true;
 					$oReturn->activities[$acounter]->is_spam = $oActivity->is_spam === "0" ? false : true;
-					
+					if($oActivity->children){
+						$oReturn->activities[$acounter]->childCount = count($oActivity->children);
+					}else{
+						$oReturn->activities[$acounter]->childCount = 0;
+					}
 					$total_votes = $total_up = $total_down = 0;
 					$uplink = $downlink = '#';
 					$voteed_action = 'up';
@@ -2596,12 +2747,8 @@ public function bbp_api_new_topic_handler() {
 					{
 						$arg = array(
 							'item_id'=>$oActivity->id,
-							//'user_id'=>$oActivity->user_id,
 							'type'=>'activity',
 							);
-						
-						//$item_total_up_votes = $wpdb->get_var("select count(id) from `".$table_prefix."ask_votes` WHERE  action='up' and secondary_item_id=\"$item_id\" $subsql limit 1");
-						//$user_total_votes = $wpdb->get_var("select action from `".$table_prefix."ask_votes` WHERE secondary_item_id=\"$item_id\" and user_id=\"$user_id\" $subsql limit 1");
 						$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
 						if($votes_str){
 						$votes = json_decode($votes_str);
@@ -2624,84 +2771,8 @@ public function bbp_api_new_topic_handler() {
 					$oReturn->activities[$acounter]->vote->total_votes = $total_votes;
 					$oReturn->activities[$acounter]->vote->total_up = $total_up;
 					$oReturn->activities[$acounter]->vote->total_down = $total_down;
-					//$oReturn->activities[$acounter]->vote->uplink = $uplink;
-					//$oReturn->activities[$acounter]->vote->downlink = $downlink;
 					$oReturn->activities[$acounter]->vote->action = $voteed_action;
 					$oReturn->activities[$acounter]->suggetionGroups = null;
-				
-					if($oActivity->children){
-						//children
-						$counter=0;
-						foreach($oActivity->children as $childoActivity){
-						$childuser = new BP_Core_User($childoActivity->user_id);
-						if($childuser && $childuser->avatar){
-							if($childuser->avatar_thumb){
-								preg_match_all('/(src)=("[^"]*")/i',$childuser->avatar_thumb, $user_avatar_result);
-								$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
-								if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
-								$childoActivity->avatar_thumb = $avatar_thumb;
-							}
-						}
-						$oReturn->activities[$acounter]->children->$counter->id = $childoActivity->id;
-						$oReturn->activities[$acounter]->children->$counter->item_id = $childoActivity->item_id;
-						$oReturn->activities[$acounter]->children->$counter->component = $childoActivity->component;
-						$oReturn->activities[$acounter]->children->$counter->user->id = (int)$childoActivity->user_id;
-						$oReturn->activities[$acounter]->children->$counter->user->username = $childoActivity->user_login;
-						$oReturn->activities[$acounter]->children->$counter->user->mail = $childoActivity->user_email;
-						$oReturn->activities[$acounter]->children->$counter->user->display_name = $childoActivity->display_name;
-						//$oReturn->activities[$acounter]->children->$counter->user->avatar_big = $childoActivity->avatar_big;
-						$oReturn->activities[$acounter]->children->$counter->user->avatar_thumb = $childoActivity->avatar_thumb;
-						$oReturn->activities[$acounter]->children->$counter->type = $childoActivity->type;
-						$oReturn->activities[$acounter]->children->$counter->time = $childoActivity->date_recorded;
-						$oReturn->activities[$acounter]->children->$counter->action = $childoActivity->action;
-						$oReturn->activities[$acounter]->children->$counter->content = stripcslashes($childoActivity->content);
-						$oReturn->activities[$acounter]->children->$counter->is_hidden = $childoActivity->hide_sitewide === "0" ? false : true;
-						$oReturn->activities[$acounter]->children->$counter->is_spam = $childoActivity->is_spam === "0" ? false : true;
-						$user = new BP_Core_User($childoActivity->user_id);
-						
-						$total_votes = $total_up = $total_down = 0;
-						$uplink = $downlink = '#';
-						$voteed_action = '';
-						if(class_exists('VoterPluginClass'))
-						{
-							$arg = array(
-								'item_id'=>$childoActivity->id,
-								'user_id'=>$childoActivity->user_id,
-								'type'=>'activity',
-								//'component'=>'buddypress',
-								);					
-							$votes_str = VoterPluginClass::aheadzen_get_post_all_vote_details($arg);
-							$votes = json_decode($votes_str);
-							
-							$total_votes = $votes->total_votes;
-							$total_up = $votes->total_up;
-							$total_down = $votes->total_down;
-							$uplink = $votes->post_voter_links->up;
-							$downlink = $votes->post_voter_links->down;
-							
-							if($_GET['currentUserId']){
-								$user_id = $_GET['currentUserId'];
-								//$user_id = $childoActivity->user_id;
-								$secondary_item_id = $childoActivity->id;
-								$type = $childoActivity->type;
-								$item_id = 0;
-								$component = 'buddypress';
-								$voteed_action = $wpdb->get_var("SELECT action FROM `".$table_prefix."ask_votes` WHERE user_id=\"$user_id\" AND item_id=\"$item_id\" AND component=\"$component\" AND type=\"$type\" AND secondary_item_id=\"$secondary_item_id\"");
-								
-							}
-						}
-						
-						$oReturn->activities[$acounter]->children->$counter->vote->total_votes = $total_votes;
-						$oReturn->activities[$acounter]->children->$counter->vote->total_up = $total_up;
-						$oReturn->activities[$acounter]->children->$counter->vote->total_down = $total_down;
-						$oReturn->activities[$acounter]->children->$counter->vote->uplink = $uplink;
-						$oReturn->activities[$acounter]->children->$counter->vote->downlink = $downlink;
-						$oReturn->activities[$acounter]->children->$counter->vote->action = $voteed_action;
-						
-						$counter++;
-						}
-						
-					}
 					$acounter++;
 				}	
 			}
@@ -2824,12 +2895,39 @@ public function bbp_api_new_topic_handler() {
 			}
 		}
 		
-		$aTempActivities = bp_activity_get($aParams);
 		
-		if (!empty($aTempActivities['activities'])) {
+		/*global $activities_template;
+		if (bp_has_activities($aParams)){
+			$acounter=0;
+			while ( bp_activities() ){
+				bp_the_activity(); 
+				$oActivity =  $activities_template->activity;
+				$oActivity->content = bp_get_activity_content_body();
+				if($oActivity->component=='votes' || $oActivity->type=='joined_group'){ }else{
+					if($oActivity->type=='updated_profile' || $oActivity->type=='new_avatar'){
+						$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->user_id][0] = $oActivity;
+					}else{
+						if($oActivity->type=='save_chart' || $oActivity->type=='new_member' || $theAct->type=='joined_group'){
+							$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][] = $oActivity;
+						}else{
+							$randVar = time().rand(1,10000);
+							$theActivityGroup[$oActivity->component][$oActivity->type][$randVar][] = $oActivity;
+						}							
+					}
+				}
+				
+			}
+		}*/
+		//$aTempActivities = bp_activity_get($aParams);
+		//if (!empty($aTempActivities['activities'])) {
+		global $activities_template;
+		if (bp_has_activities($aParams)){
 				$acounter=0;
-                foreach ($aTempActivities['activities'] as $oActivity) {
-					
+               // foreach ($aTempActivities['activities'] as $oActivity) {
+				 while ( bp_activities() ){
+					bp_the_activity(); 
+					$oActivity =  $activities_template->activity;
+					$oActivity->content = bp_get_activity_content_body();					
 					if($oActivity->type=='activity_comment'){
 						
 					}else{
@@ -2862,6 +2960,13 @@ public function bbp_api_new_topic_handler() {
 						$oReturn->activities[$acounter]->type = $oActivity->type;
 						$oReturn->activities[$acounter]->time = $oActivity->date_recorded;
 						
+						$oReturn->activities[$acounter]->user->is_following = 0;
+						if($_GET['currentUserId']  && $oActivity->user_id==$_GET['currentUserId']){
+							$oReturn->activities[$acounter]->user->is_following = 1;
+						}elseif(function_exists('bp_follow_is_following') && bp_follow_is_following(array('leader_id'=>$oActivity->user_id,'follower_id'=>$_GET['currentUserId']))){
+							$oReturn->activities[$acounter]->user->is_following = 1;
+						}
+					
 						if($oActivity->type=='new_avatar'){
 							//$oActivity->action = '<a href="'.$oActivity->primary_link.'">'.$oActivity->user_fullname.'</a> changed their profile picture. <br /><img src="'.$oActivity->avatar_thumb.'" alt="" />';
 							$oActivity->action = 'Changed their profile picture. <br /><img src="'.$oActivity->avatar_thumb.'" alt="" />';
@@ -3123,9 +3228,13 @@ public function bbp_api_new_topic_handler() {
 		header("Access-Control-Allow-Origin: *");
 	   $this->init('messages');
         $oReturn = new stdClass();
-
+		
+		$page = $_GET['thepage'];
+		if(!$page){$page=1;}
+		
         $aParams ['box'] = $this->box;
         $aParams ['per_page'] = $this->per_page;
+		$aParams ['page'] = $page;
         $aParams ['max'] = $this->limit;
 		$aParams ['user_id'] = $_GET['userid'];
 		
@@ -3280,14 +3389,16 @@ public function bbp_api_new_topic_handler() {
 		
 		if(!$_GET['userid']){$oReturn->message = __('Not the post method.','aheadzen'); return $oReturn;}
 		$user_id = $_GET['userid'];	
-		global $bp,$current_user;
+		global $bp,$current_user,$table_prefix, $wpdb;
 		wp_set_current_user($user_id);
 		do_action('bp_init');
 		
 		$page = $_GET['page'];
 		$per_page = $_GET['per_page'];
+		$group_per_page = $_GET['group_per_page'];
 		if(!$page){$page=1;}
 		if(!$per_page){$per_page=20;}
+		if(!$group_per_page){$group_per_page=20;}
 		$arg = array(
 			'user_id' => $user_id, 
 			'is_new' => 'both',
@@ -3296,13 +3407,44 @@ public function bbp_api_new_topic_handler() {
 			'order_by' => 'date_notified',
 			'sort_order' => 'DESC'
 		);
-		$aNotifications = BP_Notifications_Notification::get($arg);
-		
+		$aNotifications = BP_Notifications_Notification::get($arg);		
+		if($page==1){
+			$aNotificationsCount = count($aNotifications);
+			$memberGroupSql = "select group_id from ".$table_prefix."bp_groups_members where user_id='".$user_id."'";
+			$memberGroups = $wpdb->get_col($memberGroupSql);
+			if($memberGroups){
+				$memberGroupsStr = implode(',',$memberGroups);
+				$now_date = bp_core_current_time();
+				$activitySql = "select * from ".$table_prefix."bp_activity where component='groups' and type in ('joined_group','activity_update','new_forum_topic') and is_spam=0 and hide_sitewide=0 and item_id in ($memberGroupsStr) and TIMESTAMPDIFF(HOUR,date_recorded,'".$now_date."')<2400 order by date_recorded desc  limit $group_per_page";
+				$activityRes = $wpdb->get_results($activitySql);
+				if($activityRes){
+					foreach($activityRes as $activityResObj){
+						$notificationObj = NULL;
+						$notificationObj->id = $activityResObj->id;
+						$notificationObj->user_id = $activityResObj->user_id;
+						$notificationObj->item_id = $activityResObj->item_id;
+						$notificationObj->secondary_item_id = $activityResObj->secondary_item_id;
+						$notificationObj->component_name = 'customgroupnotification';
+						$notificationObj->component_action = $activityResObj->action;
+						$notificationObj->date_notified = $activityResObj->date_recorded;
+						$notificationObj->is_new = 0;
+						$aNotifications[] = $notificationObj;
+						$aNotificationsCount++;					
+					}
+				}			
+			}
+		}
+		usort($aNotifications, function($a, $b)
+		{
+			return strcmp($b->date_notified,$a->date_notified);
+		});
 		$counter = 0;
 		$isNewCounter = 0;
 		$userDataArr = array();
 		foreach ($aNotifications as $sNotificationMessage) {
-			if($sNotificationMessage->content){
+			if($sNotificationMessage->component_name == 'customgroupnotification'){
+				$content = $sNotificationMessage->component_action;
+			}elseif($sNotificationMessage->content){
 				$content = $sNotificationMessage->content;
 			}else{
 				$notification = $sNotificationMessage;
@@ -3337,7 +3479,9 @@ public function bbp_api_new_topic_handler() {
 				$friend_thumb = 'img/friend.png';
 				
 				$avatar_thumb = '';
-				if($sNotificationMessage->component_name=='follow' || $sNotificationMessage->component_name=='friends'){
+				if($notificationObj->component_name == 'customgroupnotification'){
+					$userid = $sNotificationMessage->user_id;
+				}elseif($sNotificationMessage->component_name=='follow' || $sNotificationMessage->component_name=='friends'){
 					$userid = intval($sNotificationMessage->item_id);
 					$avatar_thumb = $friend_thumb;
 				}elseif($sNotificationMessage->component_name=='votes'){
@@ -4068,6 +4212,8 @@ public function bbp_api_new_topic_handler() {
 		$aConfig['post_parent'] = $this->forumid;
 		$aConfig['posts_per_page'] = $this->per_page;
 		$aConfig['paged'] = $this->page;
+		$aConfig['orderby'] = 'date';
+		$aConfig['order'] = 'DESC';
 		if ( bbp_has_topics( $aConfig ) ){
 			global $post;
 			while ( bbp_topics() ) {
@@ -4192,7 +4338,7 @@ public function bbp_api_new_topic_handler() {
         $aConfig['page'] = $this->page;
         $aConfig['per_page'] = $this->per_page;
         $aConfig['order'] = $this->order;*/
-		
+		if($_GET['topicid']){$this->topicid = $_GET['topicid'];}
 		$response = bbp_get_topic($this->topicid);
 		$oForum = bbp_get_forum($response->post_parent);
 		
@@ -4211,7 +4357,7 @@ public function bbp_api_new_topic_handler() {
 		$oReturn->topic->poster->username = $oUser->profile_data['user_login'];
 		$oReturn->topic->poster->mail = $oUser->profile_data['user_email'];
 		$oReturn->topic->poster->display_name = $oUser->profile_data['Name']['field_data'];
-		$oReturn->topic->post_count = (int) bbp_get_topic_post_count($this->topicid);
+		//$oReturn->topic->post_count = (int) bbp_get_topic_post_count($this->topicid);
 		$oReturn->topic->start_time = $response->post_date;
 		if($oUser && $oUser->avatar_thumb){
 			if($oUser->avatar_thumb){
@@ -4310,7 +4456,8 @@ public function bbp_api_new_topic_handler() {
 				
 			}
 		}		
-	    $oReturn->count = count($aPosts);
+	    $oReturn->postcount = count($oReturn->posts);
+		$oReturn->topic->post_count = $oReturn->postcount;
 		return $oReturn;
     }
 
@@ -4532,53 +4679,64 @@ public function bbp_api_new_topic_handler() {
 		$oReturn->error = '';
 		if(!$_GET['userid']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
 		
-		$args = array('user_id' => $_GET['userid']);
-		$followers = bp_follow_get_followers($args);
 		if($_GET['getdata']=='ids'){
+			$args = array('user_id' => $_GET['userid']);
+			$followers = bp_follow_get_followers($args);
 			$oReturn->followers = $followers;
 			return  $oReturn;
-		}else if($followers){
+		}else{
+			global $bp,$wpdb;
+			$thepage = 1;
+			$perpage = 20;
+			if($_GET['thepage']){$thepage = $_GET['thepage'];}
+			if($_GET['perpage']){$perpage = $_GET['perpage'];}
+			$start = $perpage*($thepage-1);
+			$last = $perpage*$thepage;
+			
+			$followers = $wpdb->get_col("SELECT follower_id FROM {$bp->follow->table_name} WHERE leader_id = '".$_GET['userid']."' limit $start, $last");
 			$counter=0;
-			for($f=0;$f<count($followers);$f++){
-				$user = new BP_Core_User($followers[$f]);				
-				if($user){
-					$username = $avatar_big = $avatar_thumb = '';
-					if($user->user_url){
-						$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
-					}
-					if($user->avatar){
-						preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
-						$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
-						if($avatar_big && !strstr($avatar_big,'http:')){ $avatar_big = 'http:'.$avatar_big;}
-					}
-					if($user->avatar_thumb){
-						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
-						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
-						if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
-					}					
-					$oReturn->members[$counter]->id 		= $user->id;
-					$oReturn->members[$counter]->username 	= $username;
-					$oReturn->members[$counter]->fullname 	= $user->fullname;
-					$oReturn->members[$counter]->email 		= $user->email;
-					$oReturn->members[$counter]->last_active= $user->last_active;
-					$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
-					
-					$profile_data = $user->profile_data;
-					if($profile_data){
-						foreach($profile_data as $sFieldName => $val){
-							if(is_array($val)){
-								$oReturn->members[$counter]->$sFieldName = $val['field_data'];
+			if($followers){
+				for($f=0;$f<count($followers);$f++){
+					$user = new BP_Core_User($followers[$f]);				
+					if($user){
+						$username = $avatar_big = $avatar_thumb = '';
+						if($user->user_url){
+							$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
+						}
+						if($user->avatar){
+							preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+							$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+							if($avatar_big && !strstr($avatar_big,'http:')){ $avatar_big = 'http:'.$avatar_big;}
+						}
+						if($user->avatar_thumb){
+							preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+							$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+							if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+						}					
+						$oReturn->members[$counter]->id 		= $user->id;
+						$oReturn->members[$counter]->username 	= $username;
+						$oReturn->members[$counter]->fullname 	= $user->fullname;
+						$oReturn->members[$counter]->email 		= $user->email;
+						$oReturn->members[$counter]->last_active= $user->last_active;
+						$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
+						
+						$profile_data = $user->profile_data;
+						if($profile_data){
+							foreach($profile_data as $sFieldName => $val){
+								if(is_array($val)){
+									$oReturn->members[$counter]->$sFieldName = $val['field_data'];
+								}
 							}
 						}
+						if(function_exists('bp_follow_total_follow_counts')){
+							$oReturn->members[$counter]->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' => $user->id ) );
+						}
+						$oReturn->members[$counter]->is_following = 0;
+						if(function_exists('bp_follow_is_following') && bp_follow_is_following(array('leader_id'=>$user->id,'follower_id'=>$_GET['userid']))){
+							$oReturn->members[$counter]->is_following = 1;
+						}
+						$counter++;
 					}
-					if(function_exists('bp_follow_total_follow_counts')){
-						$oReturn->members[$counter]->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' => $user->id ) );
-					}
-					$oReturn->members[$counter]->is_following = 0;
-					if(function_exists('bp_follow_is_following') && bp_follow_is_following(array('leader_id'=>$user->id,'follower_id'=>$_GET['userid']))){
-						$oReturn->members[$counter]->is_following = 1;
-					}
-					$counter++;
 				}
 			}
 		}
@@ -4597,54 +4755,65 @@ public function bbp_api_new_topic_handler() {
 		$oReturn->error = '';
 		if(!$_GET['userid']){$oReturn->error = __('Wrong User ID.','aheadzen'); return $oReturn;}
 		$args = array('user_id' => $_GET['userid']);
-		$followings = bp_follow_get_following($args);
 		if($_GET['getdata']=='ids'){
+			$followings = bp_follow_get_following($args);
 			$oReturn->followings = $followings;
 			return  $oReturn;
-		}else if($followings){
+		}else{
+			global $bp,$wpdb;
+			$thepage = 1;
+			$perpage = 20;
+			if($_GET['thepage']){$thepage = $_GET['thepage'];}
+			if($_GET['perpage']){$perpage = $_GET['perpage'];}
+			$start = $perpage*($thepage-1);
+			$last = $perpage*$thepage;
+			$followings = $wpdb->get_col("SELECT leader_id FROM {$bp->follow->table_name} WHERE follower_id = '".$_GET['userid']."' limit $start, $last");
 			$counter=0;
-			for($f=0;$f<count($followings);$f++){
-				$user = new BP_Core_User($followings[$f]);				
-				if($user){
-					$username = $avatar_big = $avatar_thumb = '';
-					if($user->user_url){
-						$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
-					}
-					if($user->avatar){
-						preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
-						$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
-						if($avatar_big && !strstr($avatar_big,'http:')){ $avatar_big = 'http:'.$avatar_big;}
-					}
-					if($user->avatar_thumb){
-						preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
-						$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
-						if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
-					}					
-					$oReturn->members[$counter]->id 		= $user->id;
-					$oReturn->members[$counter]->username 	= $username;
-					$oReturn->members[$counter]->fullname 	= $user->fullname;
-					$oReturn->members[$counter]->email 		= $user->email;
-					$oReturn->members[$counter]->last_active= $user->last_active;
-					$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
-					
-					$profile_data = $user->profile_data;
-					if($profile_data){
-						foreach($profile_data as $sFieldName => $val){
-							if(is_array($val)){
-								$oReturn->members[$counter]->$sFieldName = $val['field_data'];
+			if($followings){
+				for($f=0;$f<count($followings);$f++){
+					$user = new BP_Core_User($followings[$f]);				
+					if($user){
+						$username = $avatar_big = $avatar_thumb = '';
+						if($user->user_url){
+							$username = str_replace('/','',str_replace(site_url('/members/'),'',$user->user_url));
+						}
+						if($user->avatar){
+							preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
+							$avatar_big = str_replace('"','',$user_avatar_result[2][0]);
+							if($avatar_big && !strstr($avatar_big,'http:')){ $avatar_big = 'http:'.$avatar_big;}
+						}
+						if($user->avatar_thumb){
+							preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+							$avatar_thumb = str_replace('"','',$user_avatar_result[2][0]);
+							if($avatar_thumb && !strstr($avatar_thumb,'http:')){ $avatar_thumb = 'http:'.$avatar_thumb;}
+						}					
+						$oReturn->members[$counter]->id 		= $user->id;
+						$oReturn->members[$counter]->username 	= $username;
+						$oReturn->members[$counter]->fullname 	= $user->fullname;
+						$oReturn->members[$counter]->email 		= $user->email;
+						$oReturn->members[$counter]->last_active= $user->last_active;
+						$oReturn->members[$counter]->avatar_thumb = $avatar_thumb;
+						
+						$profile_data = $user->profile_data;
+						if($profile_data){
+							foreach($profile_data as $sFieldName => $val){
+								if(is_array($val)){
+									$oReturn->members[$counter]->$sFieldName = $val['field_data'];
+								}
 							}
 						}
+						if(function_exists('bp_follow_total_follow_counts')){
+							$oReturn->members[$counter]->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' => $user->id ) );
+						}
+						$oReturn->members[$counter]->is_following = 0;
+						if(function_exists('bp_follow_is_following') && bp_follow_is_following(array('leader_id'=>$user->id,'follower_id'=>$_GET['userid']))){
+							$oReturn->members[$counter]->is_following = 1;
+						}
+						$counter++;
 					}
-					if(function_exists('bp_follow_total_follow_counts')){
-						$oReturn->members[$counter]->follow_counts  = bp_follow_total_follow_counts( array( 'user_id' => $user->id ) );
-					}
-					$oReturn->members[$counter]->is_following = 0;
-					if(function_exists('bp_follow_is_following') && bp_follow_is_following(array('leader_id'=>$user->id,'follower_id'=>$_GET['userid']))){
-						$oReturn->members[$counter]->is_following = 1;
-					}
-					$counter++;
 				}
 			}
+			
 		}
 		
 		return  $oReturn;
