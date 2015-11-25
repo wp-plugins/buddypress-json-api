@@ -353,6 +353,8 @@ public function bbp_api_new_reply_handler() {
 			'post_content'		=> $_POST['bbp_reply_content'],
 		);		
 		$reply_id = wp_update_post( $reply_data );
+		$oReturn->success->id = $reply_id; 
+		$oReturn->success->msg = __('Reply Added Successfully.','aheadzen');
 		return  $oReturn;
 	}
 	
@@ -2810,6 +2812,10 @@ public function bbp_api_new_topic_handler() {
 			
 			$oReturn->total_pages = ceil($aTempActivities['total']/$per_page);
 			$oReturn->total_count = $aTempActivities['total'];
+			$oReturn->is_currentuser_avatar = 0;
+			if($_GET['currentUserId'] && bp_get_user_has_avatar($_GET['currentUserId'])){
+				$oReturn->is_currentuser_avatar = 1;
+			}
 		} else {
 			return $this->error('activity');
 		}
@@ -3243,16 +3249,20 @@ public function bbp_api_new_topic_handler() {
 			global $messages_template;
             while (bp_message_threads()) {
                 bp_message_thread();
+				
 				$aTemp = new stdClass();
-				preg_match("#>(.*?)<#", bp_get_message_thread_from(), $aFrom);
-				$oUser = get_user_by('login', $aFrom[1]);
+				//preg_match("#>(.*?)<#", bp_get_message_thread_from(), $aFrom);
+				$oUser = new BP_Core_User($messages_template->thread->last_sender_id);
+				$username = '';
+				if($oUser->user_url){
+					$username = str_replace('/','',str_replace(site_url('/members/'),'',$oUser->user_url));
+				}
+				$aTemp->from->id = $oUser->id;
+				$aTemp->from->username = $username;
+                $aTemp->from->mail = $oUser->email;
+                $aTemp->from->display_name = $oUser->fullname;
 				
-				$aTemp->from->id = $oUser->data->ID;
-				$aTemp->from->username = $aFrom[1];
-                $aTemp->from->mail = $oUser->data->user_email;
-                $aTemp->from->display_name = $oUser->data->display_name;
-				
-				preg_match_all('/(src)=("[^"]*")/i',bp_get_message_thread_avatar(), $user_avatar_result);
+				preg_match_all('/(src)=("[^"]*")/i',$oUser->avatar, $user_avatar_result);
 				$aTemp->from->avatar = str_replace('"','',$user_avatar_result[2][0]);
 				preg_match("#>(.*?)<#", bp_get_message_thread_to(), $aTo);
 				$oUser = get_user_by('login', $aTo[1]);
@@ -3262,10 +3272,10 @@ public function bbp_api_new_topic_handler() {
                 $aTemp->to->display_name = $oUser->data->display_name;
 				
 				$message_id =  bp_get_message_thread_id();
-                $aTemp->message_id = $message_id;
+				$aTemp->message_id = $message_id;
 				$aTemp->subject = bp_get_message_thread_subject();
                 $aTemp->excerpt = bp_get_message_thread_excerpt();
-                $aTemp->link = bp_get_message_thread_view_link();
+				$aTemp->link = bp_get_message_thread_view_link();
 				$aTemp->date = bp_get_message_thread_last_post_date_raw();
 				$aTemp->unread = bp_message_thread_has_unread($_GET['userid']);				
 				$aTemp->thread_total_count = bp_get_message_thread_total_count($message_id);
@@ -3275,7 +3285,7 @@ public function bbp_api_new_topic_handler() {
         } else {
             return $this->error('messages');
         }
-		//echo '<pre>';print_r($oReturn);echo '</pre>';
+		//echo '<pre>';print_r($oReturn);echo '</pre>';exit;
 		return $oReturn;
     }
 	
@@ -4392,12 +4402,15 @@ public function bbp_api_new_topic_handler() {
 				$oReturn->topic->last_poster->avatar = $avatar_thumb;
 			}
 		}
+		
+		$orderby = 'DESC';
+		if($_GET['orderby']){$orderby = $_GET['orderby'];}
 		$aConfig['post_type'] = bbp_get_reply_post_type();
 		$aConfig['post_parent'] = $this->topicid;
 		$aConfig['posts_per_page'] = $this->per_page;
 		$aConfig['paged'] = $this->page;
 		$aConfig['orderby'] = 'date';
-		$aConfig['order'] = 'DESC';
+		$aConfig['order'] = $orderby;
 		
 		global $post;
 		if(bbp_has_replies($aConfig)){
