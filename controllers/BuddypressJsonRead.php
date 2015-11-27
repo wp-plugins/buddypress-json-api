@@ -2506,7 +2506,7 @@ public function bbp_api_new_topic_handler() {
      * @return array activities: an array containing the activities
      */
 	 public function activity_get_activities_grouped() {
-		//$time_start = microtime(true); 
+		add_filter('bp_insert_activity_meta','bp_insert_activity_meta_fun',999,2);
 		header("Access-Control-Allow-Origin: *");
         $oReturn = new stdClass();
 		$oReturn->success = '';
@@ -2680,8 +2680,8 @@ public function bbp_api_new_topic_handler() {
 				}else{
 					$user = new BP_Core_User($oActivity->user_id);
 					if($user && $user->avatar){
-						if($user->avatar_thumb){
-							preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
+						if($user->avatar){
+							preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
 							$thumb = str_replace('"','',$user_avatar_result[2][0]);
 							if($thumb && !strstr($thumb,'http:')){ $thumb = 'http:'.$thumb;}
 							$oActivity->avatar_thumb = $thumb;
@@ -2709,7 +2709,7 @@ public function bbp_api_new_topic_handler() {
 					}
 					
 					if($oActivity->type=='new_avatar'){
-						$oActivity->action = 'Changed their profile picture. <br /><img src="'.$oActivity->avatar_thumb.'" alt="" />';
+						$oActivity->action = 'Changed their profile picture. <br /><img class="full-image" src="'.$oActivity->avatar_thumb.'" alt="" />';
 					}else if($oActivity->type=='updated_profile'){
 						if($oActivity->action=='' && $oActivity->content==''){
 							$oActivity->action = 'Changed their profile';
@@ -4840,4 +4840,8 @@ public function bbp_api_new_topic_handler() {
         return isset(BUDDYPRESS_JSON_API_FUNCTION::$sVars[$sName]) ? BUDDYPRESS_JSON_API_FUNCTION::$sVars[$sName] : NULL;
     }
 
+}
+
+function bp_insert_activity_meta_fun($new_content, $content){
+	return $content;
 }
