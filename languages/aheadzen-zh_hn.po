@@ -1,0 +1,423 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Voter Plugin v2.1.3\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2015-04-08 06:10:27+0000\n"
+"Last-Translator: admin <admin@localhost.com>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: CSL v1.x\n"
+"X-Poedit-Language: English\n"
+"X-Poedit-Country: UNITED STATES\n"
+"X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-KeywordsList: __;_e;__ngettext:1,2;_n:1,2;__ngettext_noop:1,2;_n_noop:1,2;_c,_nc:4c,1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;_nx_noop:4c,1,2;\n"
+"X-Poedit-Basepath: \n"
+"X-Poedit-Bookmarks: \n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Textdomain-Support: yes"
+
+#: admin_settings.php:53
+#
+msgid "Your settings updated successfully."
+msgstr "您的设置已成功更新。"
+
+#: admin_settings.php:50
+#
+msgid "Voter Settings"
+msgstr "选民设置"
+
+#: admin_settings.php:65
+#
+msgid "Voting Display Options"
+msgstr "投票显示选项"
+
+#: admin_settings.php:68
+#
+msgid "Simple Like/Unlike"
+msgstr "简单的像/不同于"
+
+#: admin_settings.php:69
+#
+msgid "Helpful? Yes/No"
+msgstr "有用吗？是/否"
+
+#: admin_settings.php:70
+#
+msgid "Thumbs up/down"
+msgstr "大拇指向上/向下"
+
+#: admin_settings.php:71
+#
+msgid "Up/Down Button"
+msgstr "向上/向下按钮"
+
+#: admin_settings.php:80
+#
+msgid "Hide down votes completely?"
+msgstr "隐藏下来票数完全？"
+
+#: admin_settings.php:86
+#
+msgid "Enable On :"
+msgstr "启用日期："
+
+#: admin_settings.php:92
+#
+msgid "Pages"
+msgstr "网页"
+
+#: admin_settings.php:99
+#
+msgid "Blog Posts"
+msgstr "博客文章"
+
+#: admin_settings.php:106
+#
+msgid "WooCommerce Products"
+msgstr "WooCommerce产品"
+
+#: admin_settings.php:112
+#
+msgid "All Custom Post Type"
+msgstr "所有的自定义类型后"
+
+#: admin_settings.php:119
+#
+msgid "Comments"
+msgstr "评论"
+
+#: admin_settings.php:130
+#
+msgid "Buddypress Activity"
+msgstr "BuddyPress的活动"
+
+#: admin_settings.php:139
+#
+msgid "Buddypress Groups"
+msgstr "BuddyPress的组"
+
+#: admin_settings.php:148
+#
+msgid "Buddypress Members Profile"
+msgstr "BuddyPress的成员简介"
+
+#: admin_settings.php:157
+#
+msgid "bbPress Posts"
+msgstr "bbPress的帖子"
+
+#: admin_settings.php:174
+#
+msgid "Notification Settings"
+msgstr "通知设置"
+
+#: admin_settings.php:182
+#
+msgid "Disable alert by Activity?"
+msgstr "通过活动禁用警报？"
+
+#: admin_settings.php:190
+#
+msgid "Disable alert by Notification?"
+msgstr "通过通知禁用警报？"
+
+#: admin_settings.php:198
+#
+msgid "Disable alert by Email?"
+msgstr "通过电子邮件禁用警报？"
+
+#: admin_settings.php:205
+#
+msgid "Login Popup Settings"
+msgstr "登录弹出设置"
+
+#: admin_settings.php:214
+#
+msgid "Popup Title"
+msgstr "弹出标题"
+
+#: admin_settings.php:226
+#
+msgid "Popup Content"
+msgstr "弹出内容"
+
+#: admin_settings.php:238
+#
+msgid "Login URL"
+msgstr "登录网址"
+
+#: admin_settings.php:240
+#: admin_settings.php:253
+#
+msgid "default:"
+msgstr "默认情况下："
+
+#: admin_settings.php:251
+#
+msgid "Registration URL"
+msgstr "注册网址"
+
+#: admin_settings.php:261
+#
+msgid "Display Login Form?"
+msgstr "显示登录表单？"
+
+#: admin_settings.php:262
+#
+msgid "By selecting the option it will display the login form with popup."
+msgstr "通过选择该选项，将显示带有弹出的登录表单。"
+
+#: admin_settings.php:269
+#
+msgid "Do you want to disable login box js (jquery-ui.js)?"
+msgstr "难道你想关闭登录框JS（jQuery的-ui.js）？"
+
+#: admin_settings.php:270
+#
+msgid "The plugin including \"http://code.jquery.com/ui/1.10.3/jquery-ui.js\" for login dialog box In case your website already included and may creating conflict you can disable/remove it by this option."
+msgstr "该插件包括\“HTTP：//code.jquery.com/ui/1.10.3/jquery-ui.js \”的登录对话框，如果你的网站已经包含并可能产生冲突，你可以禁用/本将其删除选项​​。"
+
+#: admin_settings.php:278
+#
+msgid "Select the page template to disable voter plugin"
+msgstr "选择页面模板禁用选民插件"
+
+#: admin_settings.php:293
+#
+msgid "Please select the template if you want to disable the voter plugin for it."
+msgstr "请选择模板，如果你想禁用选民插件吧。"
+
+#: notification.php:154
+#, php-format
+#
+msgid "%s likes comment on %s's %s %s"
+msgstr "%s0/} likes comment on %s's %s %s"
+
+#: notification.php:169
+#: notification.php:190
+#: notification.php:197
+#, php-format
+#
+msgid "%s likes %s %s"
+msgstr "%s0/} likes %s %s"
+
+#: notification.php:402
+#, php-format
+#
+msgid "To disable these notifications please log in and go to: %s"
+msgstr "%s禁用这些通知，请登录并访问： %s"
+
+#. translators: plugin header field 'Name'
+#: voter.php:0
+#
+msgid "Voter Plugin"
+msgstr "选民插件"
+
+#. translators: plugin header field 'PluginURI'
+#. translators: plugin header field 'AuthorURI'
+#: voter.php:0
+#
+msgid "http://aheadzen.com/"
+msgstr "http://aheadzen.com/"
+
+#. translators: plugin header field 'Description'
+#: voter.php:0
+#
+msgid "The plugin added votes option for pages, post, custom post types, comments, buddypress activity, groups, member profiles, woocommerce products etc. <br />You can control display option from <a href=\"options-general.php?page=voter\" target=\"_blank\"><b>Plugin Settings >></b></a>"
+msgstr "换页，张贴，自定义文章类型，注释，BuddyPress的活动，团体，会员资料，woocommerce产品等<br />您可以控制​​的<a href = \“选项，general.php显示选项的插件添加票的选择吗？页=选民\“目标= \”_空白\“> <B>插件设置>> </ B> </A>"
+
+#. translators: plugin header field 'Author'
+#: voter.php:0
+#
+msgid "Aheadzen Team  | <a href=\"options-general.php?page=voter\" target=\"_blank\">Manage Plugin Settings</a>"
+msgstr "Aheadzen团队| <a href=\"options-general.php?page=voter\" target=\"_blank\">管理插件的设置</A>"
+
+#. translators: plugin header field 'Version'
+#: voter.php:0
+#
+msgid "2.1.3"
+msgstr "2.1.3"
+
+#: voter_db_settings.php:26
+#
+msgid "This site is free and open to everyone, but our registered users get extra privileges like commenting, and voting."
+msgstr "这个网站是免费的，对所有人开放，但我们的注册用户获得额外的特权，如评论和投票。"
+
+#: voter_functions.php:153
+#
+msgid "click to vote"
+msgstr "点击投票"
+
+#: voter_functions.php:167
+#
+msgid "please login to vote"
+msgstr "请登录投票"
+
+#: voter_functions.php:178
+#
+msgid "Unlike"
+msgstr "不像"
+
+#: voter_functions.php:180
+#: voter_functions.php:183
+#
+msgid "Like"
+msgstr "如"
+
+#: voter_functions.php:192
+#
+msgid "already voted, click to remove"
+msgstr "已经投票，点击删除"
+
+#: voter_functions.php:198
+#
+msgid "already voted"
+msgstr "已经投票"
+
+#: voter_functions.php:215
+#, php-format
+#
+msgid "Is this %s helpful?"
+msgstr "%s是%s helpful?"
+
+#: voter_functions.php:215
+#, php-format
+#
+msgid "%s out of %s said Yes"
+msgstr "%s0/} out of %s said Yes"
+
+#: voter_functions.php:216
+#
+msgid "Yes"
+msgstr "是的"
+
+#: voter_functions.php:219
+#
+msgid "No"
+msgstr "没有"
+
+#: voter_functions.php:386
+#
+msgid "Wrong User"
+msgstr "错误的用户"
+
+#: voter_functions.php:391
+#
+msgid "Unknown Post"
+msgstr "未知的帖子"
+
+#: voter_functions.php:394
+#
+msgid "Invalid Post ID"
+msgstr "无效的帖子ID"
+
+#: voter_functions.php:507
+#
+msgid "Please Login"
+msgstr "请登录"
+
+#: voter_functions.php:518
+#
+msgid "Username"
+msgstr "用户名"
+
+#: voter_functions.php:522
+#
+msgid "Password"
+msgstr "密码"
+
+#: voter_functions.php:526
+#
+msgid "Remember Me"
+msgstr "记得我"
+
+#: voter_functions.php:528
+#
+msgid "Log In"
+msgstr "登录"
+
+#: voter_functions.php:530
+#: voter_functions.php:542
+#
+msgid "Register"
+msgstr "注册"
+
+#: voter_functions.php:539
+#
+msgid "Login"
+msgstr "登录"
+
+#: voter_widgets_shorcodes.php:23
+#
+msgid "Display top voted posts,pages,products,groups,members etc..."
+msgstr "Display top voted posts,pages,products,groups,members etc..."
+
+#: voter_widgets_shorcodes.php:58
+#
+msgid "Widget Title"
+msgstr "小部件标题"
+
+#: voter_widgets_shorcodes.php:60
+#
+msgid "Number of Records"
+msgstr "记录数"
+
+#: voter_widgets_shorcodes.php:61
+#
+msgid "eg: default is : 5"
+msgstr "比如：默认为：5"
+
+#: voter_widgets_shorcodes.php:63
+#
+msgid "Select Type"
+msgstr "选择类型"
+
+#: voter_widgets_shorcodes.php:67
+#
+msgid " -- Select One --"
+msgstr "  - 请选择 - "
+
+#: voter_widgets_shorcodes.php:68
+#
+msgid "Top voted posts"
+msgstr "顶帖投票"
+
+#: voter_widgets_shorcodes.php:69
+#
+msgid "Top voted pages"
+msgstr "顶部投票页面"
+
+#: voter_widgets_shorcodes.php:74
+#
+msgid "Top voted topic"
+msgstr "顶级投话题"
+
+#: voter_widgets_shorcodes.php:76
+#
+msgid "Top voted members"
+msgstr "顶级会员投票"
+
+#: voter_widgets_shorcodes.php:77
+#
+msgid "Top voted groups"
+msgstr "顶级投集团"
+
+#: voter_widgets_shorcodes.php:81
+#
+msgid "Top voted product"
+msgstr "顶级投产品"
+
+#: voter_widgets_shorcodes.php:84
+#
+msgid "eg: default : post."
+msgstr "例如：默认：岗位。"
+
+#: admin_settings.php:67
+#
+msgid "-- Select One --"
+msgstr " - 请选择 - "
+

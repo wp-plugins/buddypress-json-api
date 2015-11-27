@@ -1,0 +1,474 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Voter Plugin v2.2.1\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2015-05-18 05:41:20+0000\n"
+"Last-Translator: admin <admin@localhost.com>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=n%100/10==1 ? 2 : n%10==1 ? 0 : (n+9)%10>3 ? 2 : 1;\n"
+"X-Generator: CSL v1.x\n"
+"X-Poedit-Language: English\n"
+"X-Poedit-Country: UNITED STATES\n"
+"X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-KeywordsList: __;_e;__ngettext:1,2;_n:1,2;__ngettext_noop:1,2;_n_noop:1,2;_c,_nc:4c,1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;_nx_noop:4c,1,2;\n"
+"X-Poedit-Basepath: \n"
+"X-Poedit-Bookmarks: \n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Textdomain-Support: yes"
+
+#: admin_settings.php:53
+#@ aheadzen
+msgid "Your settings updated successfully."
+msgstr "Настройки успешно обновлены."
+
+#: admin_settings.php:50
+#@ aheadzen
+msgid "Voter Settings"
+msgstr "Настройки избирателей"
+
+#: admin_settings.php:65
+#@ aheadzen
+msgid "Voting Display Options"
+msgstr "Голосование Display Options"
+
+#: admin_settings.php:68
+#@ aheadzen
+msgid "Simple Like/Unlike"
+msgstr "Простой нравится / не в отличие от"
+
+#: admin_settings.php:69
+#@ aheadzen
+msgid "Helpful? Yes/No"
+msgstr "Полезная? Да Нет"
+
+#: admin_settings.php:70
+#@ aheadzen
+msgid "Thumbs up/down"
+msgstr "Пальцы вверх / вниз"
+
+#: admin_settings.php:71
+#@ aheadzen
+msgid "Up/Down Button"
+msgstr "Кнопки вверх / вниз"
+
+#: admin_settings.php:80
+#@ aheadzen
+msgid "Hide down votes completely?"
+msgstr "Скрыть вниз таким образом голоса полностью?"
+
+#: admin_settings.php:86
+#@ aheadzen
+msgid "Enable On :"
+msgstr "Включить On:"
+
+#: admin_settings.php:92
+#@ aheadzen
+msgid "Pages"
+msgstr "Страницы"
+
+#: admin_settings.php:99
+#@ aheadzen
+msgid "Blog Posts"
+msgstr "Сообщения в блоге"
+
+#: admin_settings.php:106
+#@ aheadzen
+msgid "WooCommerce Products"
+msgstr "WooCommerce Продукты"
+
+#: admin_settings.php:112
+#@ aheadzen
+msgid "All Custom Post Type"
+msgstr "Все Тип таможенный пост"
+
+#: admin_settings.php:119
+#@ aheadzen
+msgid "Comments"
+msgstr "Комментарии"
+
+#: admin_settings.php:130
+#@ aheadzen
+msgid "Buddypress Activity"
+msgstr "BuddyPress активность"
+
+#: admin_settings.php:139
+#@ aheadzen
+msgid "Buddypress Groups"
+msgstr "BuddyPress Группы"
+
+#: admin_settings.php:148
+#@ aheadzen
+msgid "Buddypress Members Profile"
+msgstr "BuddyPress Пользователи Профиль"
+
+#: admin_settings.php:159
+#@ aheadzen
+msgid "bbPress Posts"
+msgstr "СОШ Сообщений"
+
+#: admin_settings.php:166
+#@ aheadzen
+msgid "Notification Settings"
+msgstr "Настройки Уведомлений"
+
+#: admin_settings.php:174
+#@ aheadzen
+msgid "Disable alert by Activity?"
+msgstr "Отключить уведомление по видам деятельности?"
+
+#: admin_settings.php:182
+#@ aheadzen
+msgid "Disable alert by Notification?"
+msgstr "Отключить предупреждение, уведомление?"
+
+#: admin_settings.php:190
+#@ aheadzen
+msgid "Disable alert by Email?"
+msgstr "Отключить уведомление по электронной почте?"
+
+#: admin_settings.php:197
+#@ aheadzen
+msgid "Login Popup Settings"
+msgstr "Вход Всплывающие Настройки"
+
+#: admin_settings.php:206
+#@ aheadzen
+msgid "Popup Title"
+msgstr "Popup Название"
+
+#: admin_settings.php:218
+#@ aheadzen
+msgid "Popup Content"
+msgstr "Popup Содержимое"
+
+#: admin_settings.php:230
+#@ aheadzen
+msgid "Login URL"
+msgstr "Войти URL"
+
+#: admin_settings.php:232
+#: admin_settings.php:245
+#@ aheadzen
+msgid "default:"
+msgstr "по умолчанию:"
+
+#: admin_settings.php:243
+#@ aheadzen
+msgid "Registration URL"
+msgstr "Регистрация URL"
+
+#: admin_settings.php:253
+#@ aheadzen
+msgid "Display Login Form?"
+msgstr "Показать Форма входа?"
+
+#: admin_settings.php:254
+#@ aheadzen
+msgid "By selecting the option it will display the login form with popup."
+msgstr "Выбрав опцию оно будет отображаться регистрационную форму с всплывающего окна."
+
+#: admin_settings.php:261
+#@ aheadzen
+msgid "Do you want to disable login box js (jquery-ui.js)?"
+msgstr "Вы хотите, чтобы отключить поле Логин JS (JQuery-ui.js)?"
+
+#: admin_settings.php:262
+#@ aheadzen
+msgid "The plugin including \"http://code.jquery.com/ui/1.10.3/jquery-ui.js\" for login dialog box In case your website already included and may creating conflict you can disable/remove it by this option."
+msgstr "Плагин в том числе  \"HTTP: //code.jquery.com/ui/1.10.3/jquery-ui.js \" для диалога Войти коробке В случае, если ваш сайт уже включен и может создавать конфликта, вы можете отключить / удалить его от этого вариант."
+
+#: admin_settings.php:270
+#@ aheadzen
+msgid "Select the page template to disable voter plugin"
+msgstr "Выберите шаблон страницы, чтобы отключить плагин избирателей"
+
+#: admin_settings.php:285
+#@ aheadzen
+msgid "Please select the template if you want to disable the voter plugin for it."
+msgstr "Пожалуйста, выберите шаблон, если вы хотите отключить плагин избирателей за него."
+
+#: notification.php:154
+#, php-format
+#@ aheadzen
+msgid "%s likes comment on %s's %s %s"
+msgstr "%s likes comment on %s's %s %s"
+
+#: notification.php:169
+#: notification.php:190
+#: notification.php:197
+#, php-format
+#@ aheadzen
+msgid "%s likes %s %s"
+msgstr "%s likes %s %s"
+
+#: notification.php:401
+#, php-format
+#@ aheadzen
+msgid "To disable these notifications please log in and go to: %s"
+msgstr "%sтобы отключить эти уведомления, пожалуйста, войдите в систему и перейдите по ссылке: %s"
+
+#. translators: plugin header field 'Name'
+#: voter.php:0
+#@ aheadzen
+msgid "Voter Plugin"
+msgstr "Избиратель Plugin"
+
+#. translators: plugin header field 'PluginURI'
+#. translators: plugin header field 'AuthorURI'
+#: voter.php:0
+#@ aheadzen
+msgid "http://aheadzen.com/"
+msgstr "http://aheadzen.com/"
+
+#. translators: plugin header field 'Description'
+#: voter.php:0
+#@ aheadzen
+msgid "The plugin added votes option for pages, post, custom post types, comments, buddypress activity, groups, member profiles, woocommerce products etc. <br />You can control display option from <a href=\"options-general.php?page=voter\" target=\"_blank\"><b>Plugin Settings >></b></a>"
+msgstr "Вариант плагина добавлена ​​голосов для страниц, почтовых, пользовательских типов постов, комментариев, BuddyPress деятельности, групп, членов профилей, WooCommerce изделий и т.д. <br /> Вы можете контролировать параметр отображения из <а HREF =  \"Параметры-general.php? страница = избирателей  \"TARGET = \" _ пустым  \"> <B> Настройки плагина >> </ B> </a>"
+
+#. translators: plugin header field 'Author'
+#: voter.php:0
+#@ aheadzen
+msgid "Aheadzen Team  | <a href=\"options-general.php?page=voter\" target=\"_blank\">Manage Plugin Settings</a>"
+msgstr "Aheadzen Команда | <a href=\"options-general.php?page=voter\" target=\"_blank\"> Управление настройках плагина </a>"
+
+#: voter_db_settings.php:26
+#@ aheadzen
+msgid "This site is free and open to everyone, but our registered users get extra privileges like commenting, and voting."
+msgstr "Этот сайт является бесплатным и открытым для всех, но наши Зарегистрированные пользователи получают дополнительные привилегии, как комментируя, и голосование."
+
+#: voter_functions.php:157
+#@ aheadzen
+msgid "click to vote"
+msgstr "нажмите чтобы голосовать"
+
+#: voter_functions.php:171
+#@ aheadzen
+msgid "please login to vote"
+msgstr "Пожалуйста, войдите, чтобы голосовать"
+
+#: voter_functions.php:182
+#@ aheadzen
+msgid "Unlike"
+msgstr "В Отличии"
+
+#: voter_functions.php:184
+#: voter_functions.php:187
+#@ aheadzen
+msgid "Like"
+msgstr "Так"
+
+#: voter_functions.php:197
+#@ aheadzen
+msgid "already voted, click to remove"
+msgstr "уже голосовали, нажмите, чтобы удалить"
+
+#: voter_functions.php:203
+#@ aheadzen
+msgid "already voted"
+msgstr "уже голосовали"
+
+#: voter_functions.php:220
+#, php-format
+#@ aheadzen
+msgid "Is this %s helpful?"
+msgstr "%sто %s helpful?"
+
+#: voter_functions.php:220
+#, php-format
+#@ aheadzen
+msgid "%s out of %s said Yes"
+msgstr "%s out of %s said Yes"
+
+#: voter_functions.php:221
+#@ aheadzen
+msgid "Yes"
+msgstr "Да"
+
+#: voter_functions.php:224
+#@ aheadzen
+msgid "No"
+msgstr "Нет"
+
+#: voter_functions.php:410
+#@ aheadzen
+msgid "Wrong User"
+msgstr "Неправильный пользователя"
+
+#: voter_functions.php:415
+#@ aheadzen
+msgid "Unknown Post"
+msgstr "Неизвестный сообщение"
+
+#: voter_functions.php:418
+#@ aheadzen
+msgid "Invalid Post ID"
+msgstr "Неверный сообщение ID"
+
+#: voter_functions.php:531
+#@ aheadzen
+msgid "Please Login"
+msgstr "Пожалуйста, войдите"
+
+#: voter_functions.php:542
+#@ aheadzen
+msgid "Username"
+msgstr "Имя пользователя"
+
+#: voter_functions.php:546
+#@ aheadzen
+msgid "Password"
+msgstr "Пароль"
+
+#: voter_functions.php:550
+#@ aheadzen
+msgid "Remember Me"
+msgstr "Запомнить Меня"
+
+#: voter_functions.php:552
+#@ aheadzen
+msgid "Log In"
+msgstr "Войти"
+
+#: voter_functions.php:554
+#: voter_functions.php:566
+#@ aheadzen
+msgid "Register"
+msgstr "Регистрация"
+
+#: voter_functions.php:563
+#@ aheadzen
+msgid "Login"
+msgstr "Войти"
+
+#: voter_widgets_shorcodes.php:23
+#@ aheadzen
+msgid "Display top voted posts,pages,products,groups,members etc..."
+msgstr "Показать сверху проголосовали постах, страницах, продукты, групп, членов и т.д. ..."
+
+#: voter_widgets_shorcodes.php:60
+#@ aheadzen
+msgid "Widget Title"
+msgstr "Виджет Название"
+
+#: voter_widgets_shorcodes.php:62
+#@ aheadzen
+msgid "Number of Records"
+msgstr "Количество записей"
+
+#: voter_widgets_shorcodes.php:63
+#@ aheadzen
+msgid "eg: default is : 5"
+msgstr "например: умолчанию: 5"
+
+#: voter_widgets_shorcodes.php:65
+#@ aheadzen
+msgid "Select Type"
+msgstr "Выберите тип"
+
+#: voter_widgets_shorcodes.php:69
+#@ aheadzen
+msgid " -- Select One --"
+msgstr " - Выберите Один -"
+
+#: voter_widgets_shorcodes.php:70
+#@ aheadzen
+msgid "Top voted posts"
+msgstr "Топ проголосовали сообщения"
+
+#: voter_widgets_shorcodes.php:71
+#@ aheadzen
+msgid "Top voted pages"
+msgstr "Топ проголосовали страницы"
+
+#: voter_widgets_shorcodes.php:75
+#@ aheadzen
+msgid "Top voted topic"
+msgstr "Топ проголосовали тему"
+
+#: voter_widgets_shorcodes.php:77
+#@ aheadzen
+msgid "Top voted members"
+msgstr "Топ проголосовали пользователей"
+
+#: voter_widgets_shorcodes.php:78
+#@ aheadzen
+msgid "Top voted groups"
+msgstr "Топ проголосовали группы"
+
+#: voter_widgets_shorcodes.php:82
+#@ aheadzen
+msgid "Top voted product"
+msgstr "Топ проголосовали продукт"
+
+#: voter_widgets_shorcodes.php:85
+#: voter_widgets_shorcodes.php:100
+#@ aheadzen
+msgid "eg: default : post."
+msgstr "например: по умолчанию: Post."
+
+#: admin_settings.php:67
+#@ aheadzen
+msgid "-- Select One --"
+msgstr "- Выберите Один -"
+
+#: notification.php:318
+#: notification.php:332
+#: notification.php:351
+#: notification.php:362
+#: notification.php:397
+#, php-format
+#@ aheadzen
+msgid "%s likes your %s on  %s"
+msgstr ""
+
+#. translators: plugin header field 'Version'
+#: voter.php:0
+#@ aheadzen
+msgid "2.2.1"
+msgstr ""
+
+#: voter_widgets_shorcodes.php:88
+#@ aheadzen
+msgid "Select Period"
+msgstr ""
+
+#: voter_widgets_shorcodes.php:92
+#@ aheadzen
+msgid " -- All time --"
+msgstr ""
+
+#: voter_widgets_shorcodes.php:93
+#@ aheadzen
+msgid "Last 7 days"
+msgstr ""
+
+#: voter_widgets_shorcodes.php:94
+#@ aheadzen
+msgid "Last 15 days"
+msgstr ""
+
+#: voter_widgets_shorcodes.php:95
+#@ aheadzen
+msgid "Last 30 days"
+msgstr ""
+
+#: voter_widgets_shorcodes.php:96
+#@ aheadzen
+msgid "Last 90 days"
+msgstr ""
+
+#: voter_widgets_shorcodes.php:97
+#@ aheadzen
+msgid "Last 180 days"
+msgstr ""
+
+#: voter_widgets_shorcodes.php:98
+#@ aheadzen
+msgid "Last 365 days"
+msgstr ""
+
