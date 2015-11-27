@@ -2518,8 +2518,13 @@ public function bbp_api_new_topic_handler() {
 			if($oUser){$this->userid = $oUser->data->ID;}
 		}
 		
+		$aParams ['user_id'] = $this->userid;
+		$aParams ['object'] = $this->component;
+		$aParams ['type'] = $this->type;
+		$aParams ['primary_id'] = $this->itemid;
+		$aParams ['secondary_id'] = $this->secondaryitemid;
 		$aParams ['display_comments'] = $this->comments;
-		$aParams ['sort'] = $this->sort;		
+		$aParams ['sort'] = $this->sort;
 		$aParams ['filter'] ['user_id'] = $this->userid;
 		$aParams ['filter'] ['object'] = $this->component;
 		$aParams ['filter'] ['type'] = $this->type;
@@ -2572,23 +2577,8 @@ public function bbp_api_new_topic_handler() {
 							$theActivityGroup[$oActivity->component][$oActivity->type][$randVar][] = $oActivity;
 						}							
 					}
-				}
-				
+				}				
 			}
-			/*foreach ($aTempActivities['activities'] as $oActivity) {
-				if($oActivity->component=='votes' || $oActivity->type=='joined_group'){ }else{
-					if($oActivity->type=='updated_profile' || $oActivity->type=='new_avatar'){
-						$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->user_id][0] = $oActivity;
-					}else{
-						if($oActivity->type=='save_chart' || $oActivity->type=='new_member' || $theAct->type=='joined_group'){
-							$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][] = $oActivity;
-						}else{
-							$randVar = time().rand(1,10000);
-							$theActivityGroup[$oActivity->component][$oActivity->type][$randVar][] = $oActivity;
-						}							
-					}
-				}
-			}*/
 			
 			$activityFinalArr = array();
 			if($theActivityGroup){
@@ -2779,11 +2769,6 @@ public function bbp_api_new_topic_handler() {
 				}	
 			}
 			
-			//$time_end = microtime(true);
-			//echo $execution_time = ($time_end - $time_start);
-			//print_r($oReturn);exit;
-
-			
 			if($page==1){
 				$suggetionGroups = $this->get_dashboard_groups($_GET['currentUserId']);	
 				if($suggetionGroups){
@@ -2815,6 +2800,8 @@ public function bbp_api_new_topic_handler() {
 			$oReturn->is_currentuser_avatar = 0;
 			if($_GET['currentUserId'] && bp_get_user_has_avatar($_GET['currentUserId'])){
 				$oReturn->is_currentuser_avatar = 1;
+				$avatar_url = bp_core_fetch_avatar(array('object'=>'user','item_id'=>$_GET['currentUserId'],'html'=>false,'type'=>'full'));
+				$oReturn->currentuser_avatar = $avatar_url;
 			}
 		} else {
 			return $this->error('activity');
