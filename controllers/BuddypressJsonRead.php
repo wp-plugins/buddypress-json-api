@@ -2507,6 +2507,7 @@ public function bbp_api_new_topic_handler() {
      */
 	 public function activity_get_activities_grouped() {
 		add_filter('bp_insert_activity_meta','bp_insert_activity_meta_fun',999,2);
+		add_filter('bp_activity_truncate_entry','bp_activity_truncate_entry_fun',999,3);
 		header("Access-Control-Allow-Origin: *");
         $oReturn = new stdClass();
 		$oReturn->success = '';
@@ -2769,7 +2770,7 @@ public function bbp_api_new_topic_handler() {
 				}	
 			}
 			
-			if($page==1){
+			if($page==1 && !$this->userid){
 				$suggetionGroups = $this->get_dashboard_groups($_GET['currentUserId']);	
 				if($suggetionGroups){
 					$oReturn->activities[$acounter]->id = 0;
@@ -2782,7 +2783,7 @@ public function bbp_api_new_topic_handler() {
 				}
 			}
 			
-			if($page==2){
+			if($page==2 && !$this->userid){
 				$suggetionMembers = $this->get_dashboard_members($_GET['currentUserId']);
 				if($suggetionMembers){
 					$oReturn->activities[$acounter]->id = 0;
@@ -2825,6 +2826,8 @@ public function bbp_api_new_topic_handler() {
      * @return array activities: an array containing the activities
      */
 	 public function activity_get_activities() {
+		add_filter('bp_insert_activity_meta','bp_insert_activity_meta_fun',999,2);
+		add_filter('bp_activity_truncate_entry','bp_activity_truncate_entry_fun',999,3);
 		header("Access-Control-Allow-Origin: *");
         $oReturn = new stdClass();
 		$oReturn->success = '';
@@ -2835,9 +2838,6 @@ public function bbp_api_new_topic_handler() {
 			$oUser = get_user_by('login', $_GET['username']);
 			if($oUser){$this->userid = $oUser->data->ID;}
 		}
-		
-		//$this->userid='1';
-		
 		$mentionid = $_GET['mentionid'];
 		
 		if($mentionid){
@@ -2849,7 +2849,6 @@ public function bbp_api_new_topic_handler() {
 			$aParams = array();
 			$aParams ['display_comments'] = true;
 			$aParams['in'] = array($parent_activity);
-			//$aTempActivities = bp_activity_get($aParams);
 		}else{
 			if (!bp_has_activities())
 				return $this->error('activity');
@@ -2888,36 +2887,10 @@ public function bbp_api_new_topic_handler() {
 			}
 		}
 		
-		
-		/*global $activities_template;
-		if (bp_has_activities($aParams)){
-			$acounter=0;
-			while ( bp_activities() ){
-				bp_the_activity(); 
-				$oActivity =  $activities_template->activity;
-				$oActivity->content = bp_get_activity_content_body();
-				if($oActivity->component=='votes' || $oActivity->type=='joined_group'){ }else{
-					if($oActivity->type=='updated_profile' || $oActivity->type=='new_avatar'){
-						$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->user_id][0] = $oActivity;
-					}else{
-						if($oActivity->type=='save_chart' || $oActivity->type=='new_member' || $theAct->type=='joined_group'){
-							$theActivityGroup[$oActivity->component][$oActivity->type][$oActivity->item_id][] = $oActivity;
-						}else{
-							$randVar = time().rand(1,10000);
-							$theActivityGroup[$oActivity->component][$oActivity->type][$randVar][] = $oActivity;
-						}							
-					}
-				}
-				
-			}
-		}*/
-		//$aTempActivities = bp_activity_get($aParams);
-		//if (!empty($aTempActivities['activities'])) {
 		global $activities_template;
 		if (bp_has_activities($aParams)){
 				$acounter=0;
-               // foreach ($aTempActivities['activities'] as $oActivity) {
-				 while ( bp_activities() ){
+        		 while ( bp_activities() ){
 					bp_the_activity(); 
 					$oActivity =  $activities_template->activity;
 					$oActivity->content = bp_get_activity_content_body();					
@@ -2926,20 +2899,13 @@ public function bbp_api_new_topic_handler() {
 					}else{
 						$user = new BP_Core_User($oActivity->user_id);
 						if($user && $user->avatar){
-							/*if($user->avatar){
-								preg_match_all('/(src)=("[^"]*")/i',$user->avatar, $user_avatar_result);
-								$oActivity->avatar_big = str_replace('"','',$user_avatar_result[2][0]);
-							}*/
 							if($user->avatar_thumb){
 								preg_match_all('/(src)=("[^"]*")/i',$user->avatar_thumb, $user_avatar_result);
 								$thumb = str_replace('"','',$user_avatar_result[2][0]);
 								if($thumb && !strstr($thumb,'http:')){ $thumb = 'http:'.$thumb;}
 								$oActivity->avatar_thumb = $thumb;
 							}
-							//preg_match_all('/(src)=("[^"]*")/i',$user->avatar_mini, $user_avatar_result);
-							//$oActivity->avatar_mini = str_replace('"','',$user_avatar_result[2][0]);
-						}
-						
+						}						
 						$oReturn->activities[$acounter]->id = $oActivity->id;
 						$oReturn->activities[$acounter]->component = $oActivity->component;
 						$oReturn->activities[$acounter]->user->id = $oActivity->user_id;
@@ -4845,3 +4811,8 @@ public function bbp_api_new_topic_handler() {
 function bp_insert_activity_meta_fun($new_content, $content){
 	return $content;
 }
+function bp_activity_truncate_entry_fun($excerpt, $text, $append_text){
+	$excerpt = str_replace($append_text,'',$excerpt);
+	return $excerpt;
+}
+//bp_activity_excerpt_append_text
