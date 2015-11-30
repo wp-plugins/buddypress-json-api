@@ -92,7 +92,7 @@ function bpjsonapi_has_activities($activity_flag,$activity)
 			$activitys = bp_activity_get(array('in'=>$aid));
 			if($activitys){
 				$activitie = $activitys['activities'][0];
-				$activityobj->content .= '</a>  '.$activitie->content;
+				$activityobj->content .= $activitie->content;
 			}
 		}		
 	}

@@ -1222,6 +1222,14 @@ public function bbp_api_new_topic_handler() {
 			'crop_h'        => $img_height
 		);
 		
+		// Add the activity
+		if($outputFile && function_exists('bp_activity_add')){
+			bp_activity_add( array(
+				'user_id'   => $user_id,
+				'component' => 'profile',
+				'type'      => 'new_avatar'
+			));
+		}
 		if (bp_core_avatar_handle_crop( $args ) ) {
 			$imageurl = bp_core_fetch_avatar( array( 'item_id' => $user_id,'html'=>false,'type' => 'thumb'));
 			$oReturn->success->msg = 'Image uploaded successfully.';
@@ -1288,7 +1296,6 @@ public function bbp_api_new_topic_handler() {
 			if(groups_is_user_member($post_data['userid'],$post_data['sharetogroup'])){
 				//$activity_action  = bp_core_get_userlink($post_data['userid']).' shared <a href="'.$author_primary_link.'">'.$author_display_name.'</a>\'s activity in the group <a href="' . bp_get_group_permalink( $bp->groups->current_group ) . '">' . esc_attr( $bp->groups->current_group->name ) . '</a>';
 				$content_filtered = apply_filters( 'groups_activity_new_update_content', $activity_content );
-				
 				$activity_id = groups_record_activity(array(
 					'user_id' => $post_data['userid'],
 					'action'  => $activity_action,
@@ -2549,19 +2556,19 @@ public function bbp_api_new_topic_handler() {
 			$aParams['in']=$activities;
 		}
 		
-		if (!bp_has_activities($aParams))
-			return $this->error('activity');
 		if ($this->pages !== 1) {
 			$aParams ['max'] = true;
 			$aParams ['per_page'] = $this->offset;
 			$iPages = $this->pages;
 		}
 		
-		//$aTempActivities = bp_activity_get($aParams);		
-		//if (!empty($aTempActivities['activities'])) {
+		$bp_has_activities_Obj = bp_has_activities($aParams);
+		if (!$bp_has_activities_Obj)
+			return $this->error('activity');
+		
 		$theActivityGroup = array();
 		global $activities_template;
-		if (bp_has_activities($aParams)){
+		if ($bp_has_activities_Obj){
 			$acounter=0;
 			while ( bp_activities() ){
 				bp_the_activity(); 
